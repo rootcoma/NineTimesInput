@@ -1,0 +1,9 @@
+# These values are used to encrypt your keystrokes
+# This must match on client and server
+
+Secret = _CHANGE THIS VALUE_
+Nonce  = _CHANGE THIS VALUE_
+# 127 -> Pause key (default)
+#  96 -> F12 key
+PauseKeycode = 96
+Mode = server
