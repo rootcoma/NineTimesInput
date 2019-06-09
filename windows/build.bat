@@ -16,3 +16,4 @@ mkdir build
 clang -o build\%PROGRAM_NAME% %CC_FLAGS% %LINKER_FLAGS% %SRC_FILES%
 
 pause
+

@@ -1,4 +1,4 @@
-﻿#define _WIN32_WINNT _WIN32_WINNT_WIN7
+#define _WIN32_WINNT _WIN32_WINNT_WIN7
 #define NTDDI_VERSION NTDDI_VERSION_FROM_WIN32_WINNT
 /**
  * Software made by a person, using examples from other people,
@@ -79,3 +79,4 @@ int main()
 
     return EXIT_SUCCESS;
 }
+

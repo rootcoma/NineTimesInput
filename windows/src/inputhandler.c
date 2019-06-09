@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <assert.h>
 #include "mousehook.h"
 #include "inputhandler.h"
@@ -365,3 +365,4 @@ int register_mouse_scroll(MSLLHOOKSTRUCT *mouse_event_data)
     // return KEY_NORMAL;
     return KEY_IGNORE;
 }
+

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <Windows.h>
 
 // buttons
@@ -35,3 +35,4 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data);
 // return 1 to ignore key or 0 to pass the event on
 int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
         int is_alt_down);
+

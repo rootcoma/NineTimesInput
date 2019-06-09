@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <Windows.h>
 #include "mousehook.h"
 #include "inputhandler.h"
@@ -110,3 +110,4 @@ void unhook_mouse()
     UnhookWindowsHookEx(mouse_hook_handle);
     mouse_hook_handle = NULL;
 }
+

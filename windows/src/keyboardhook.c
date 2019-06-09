@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <windows.h>
 #include "keyboardhook.h"
 #include "inputhandler.h"
@@ -74,3 +74,4 @@ int hook_keyboard()
     }
     return TRUE;
 }
+

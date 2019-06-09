@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <X11/X.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+//#include <X11/X.h>
+//#include <X11/Xlib.h>
+//#include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
+
 /**
  * TODO:
  *  - Clear all down keys when program exits
@@ -56,7 +57,7 @@ void mouse_click(const int button, const int click_type)
 
 KeyCode convertToKeyCode(const char* char_str)
 {
-    const char *conversions[] = {
+    static const char *conversions[] = {
             "Alt",            "Alt_L",
             "Application",    "Menu",
             "Backspace",      "BackSpace",
@@ -111,7 +112,6 @@ KeyCode convertToKeyCode(const char* char_str)
     if (strlen(char_str) == 1) {
         return XKeysymToKeycode(dpy, XStringToKeysym(char_str));
     }
-    
 
     KeyCode ret = XKeysymToKeycode(dpy, XStringToKeysym(char_str));
     if (ret == 0) {
@@ -127,8 +127,7 @@ void send_key(const char* char_str, const int down)
     if (keyCode == 0) {
         return;
     }
-    Bool is_down = down ? True : False;
-    XTestFakeKeyEvent(dpy, keyCode, is_down, CurrentTime);
+    XTestFakeKeyEvent(dpy, keyCode, down ? True : False, CurrentTime);
     XFlush(dpy);
 }
 
@@ -143,7 +142,7 @@ void move_to(const int x, const int y)
 void loop()
 {
     char c = ' ';
-    char tmp[32] = {0};
+    char tmp[32] = { 0 };
     int num_read = -1;
     int x = 0;
     int y = 0;
@@ -152,45 +151,44 @@ void loop()
         switch (c) {
         case '.': // Mouse move
             num_read = scanf("%d,%d", &x, &y);
-            if (num_read == 2) {
-                move_to(x, y); // move the mouse
+            if (num_read != 2) {
+                continue; // Invalid data
             }
+            move_to(x, y); // move the mouse
             break;
         case '*': // Mouse Click
             num_read = scanf("%d,%d", &x, &y);
-            // button = x, clickType = y
-            if (num_read == 2) {
-                mouse_click(x, y);
+            if (num_read != 2) {
+                continue; // Invalid data
             }
+            // button = x, clickType = y
+            mouse_click(x, y);
             break;
         case '|': // Mouse Scroll
             c = getchar();
-            if (c == '^') {
-                mouse_click(4, 0);
-                mouse_click(4, 1);
-            } else if (c == 'v') {
-                mouse_click(3, 0);
-                mouse_click(3, 1);
+            if (c != '^' && c != 'V' && c != 'v') {
+                continue; // Invalid char
             }
+            x = c == '^' ? 4 : 3;
+            // x = button, 3 x1, 4 x2
+            mouse_click(x, 0);
+            mouse_click(x, 1);
             break;
         case ',': // Key press
             c = getchar();
-            if (c == '^' || c == 'V') {
-                num_read = scanf("%31s", tmp);
-                // tmp = Key Name, y = down
-                if (num_read == 1) {
-                    if (c == 'V') {
-                        y = 1;
-                    } else {
-                        y = 0;
-                    }
-                    send_key(tmp, y);
-                }
+            if (c != '^' && c != 'V' && c != 'v') {
+                continue; // Invalid char
             }
+            num_read = scanf("%31s", tmp);
+            if (num_read != 1) {
+                continue; // Invalid data
+            }
+            x = c == '^' ? 0 : 1;
+            // tmp = Key Name, x = down
+            send_key(tmp, x);
             break;
         }
     }
-
 }
 
 
