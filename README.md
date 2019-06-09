@@ -1,4 +1,4 @@
-# KXM
+# kxm
 A network KxM (Keyboard/(void)/Mouse) server/client
 
 ## About

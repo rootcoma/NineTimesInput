@@ -1,4 +1,8 @@
 #!/usr/bin/bash
 
-echo "Starting client."
-nc 192.168.11.11 63445 | ./build/kxm
+KXM_SERVER_ADDR=192.168.11.11
+KXM_SERVER_PORT=63445
+
+echo "Connecting to $KVM_SERVER_ADDR:$KVM_SERVER_PORT"
+nc $KXM_SERVER_ADDR $KXM_SERVER_PORT | ./build/kxm
+
