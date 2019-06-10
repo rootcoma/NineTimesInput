@@ -2,10 +2,12 @@
 #include <assert.h>
 #include "mousehook.h"
 #include "inputhandler.h"
+#include "gui.h"
 
 #define MAX_DOWN_KEYS 42
 #define BUF_LEN 32
 #define MIN_MOUSE_TICKS 10
+#define QUEUE_LEN 10
 
 // State information
 BOOL is_offscreen = FALSE; // is input sent to remote server
@@ -19,11 +21,24 @@ LONG mouse_move_buff[2] = { 0 };
 DWORD down_keys[MAX_DOWN_KEYS] = { 0 };
 char tmp_buffer[BUF_LEN] = { 0 };
 
+// Output buffer, need to let hooks return
+char output_queue[QUEUE_LEN][BUF_LEN] = {{0}};
+int output_queue_offset = 0;
+
 // global storage for values to avoid Win32 calls
 int window_center_y; // storage for centerY of this ConsoleWindow when queried
 int window_center_x; // same and for center X
                     // TODO: Is this a handle that needs to be closed?
 HWND window = NULL; // storage for HWND from `GetConsoleWindow`
+
+
+void add_to_output_queue(char *output_item)
+{
+    if (output_queue_offset >= QUEUE_LEN) {
+        output_queue_offset = 0;
+    }
+    strncpy_s(output_queue[output_queue_offset++], 31, output_item, 31);
+}
 
 
 // Helper to remove keys that are released
@@ -79,15 +94,27 @@ void reset_locked_mouse()
 // the flag for input being locked is set.
 void lock_input()
 {
-    // Redundant calls, but make sure our window is in focus
-    assert(window != NULL);
-    SetForegroundWindow(window); // Win32 calls
-    SetActiveWindow(window);
-    SetFocus(window);
+    // TODO: WIP gui for capturing input
 
     // Query window rect
     RECT rect = { 0, 0, 0, 0 };
+
+#ifdef WITH_GUI
+    show_window();
+    HWND base_window_handle = get_gui_handle();
+    SetForegroundWindow(base_window_handle); // Win32 calls
+    SetActiveWindow(base_window_handle);
+    SetFocus(base_window_handle);
+    if(!GetWindowRect(base_window_handle, &rect)) {
+        fprintf(stderr, "[-] Failed accessing base_window_handle rect. error: 0x%lx\n", GetLastError());
+    }
+#else
+    SetForegroundWindow(window); // Win32 calls
+    SetActiveWindow(window);
+    SetFocus(window);
     GetWindowRect(window, &rect);
+#endif
+
     window_center_y = rect.bottom/2 + rect.top/2;
     window_center_x = rect.right/2 + rect.left/2;
 
@@ -100,6 +127,7 @@ void lock_input()
 
     // Center mouse
     reset_locked_mouse();
+
     is_input_locked = TRUE;
     //fprintf(stderr, "[*] lockInput complete\n");
 }
@@ -112,21 +140,22 @@ void flush_down_keys()
     // Send all the is_key_down keys back up, don't leave any keys pressed
     int i = 0;
     int count = 0;
+    char key_buffer[BUF_LEN] = {0};
     for (i=0;i<MAX_DOWN_KEYS;i++) {
         if (down_keys[i] == 0) {
             continue;
         }
-        if (!GetKeyNameTextA(down_keys[i], tmp_buffer, BUF_LEN - 1)) {
+        if (!GetKeyNameTextA(down_keys[i], key_buffer, BUF_LEN - 1)) {
             fprintf(stderr,
                     "[-] Could not get name of key in unlockInput. msg: %lu\n",
                     down_keys[i]);
             continue;
         }
-        printf(",^%.*s\n", BUF_LEN, tmp_buffer);
+        sprintf(tmp_buffer, ",^%.*s\n", BUF_LEN, key_buffer);
+        add_to_output_queue(tmp_buffer);
         down_keys[i] = 0;
         count++;
     }
-    fflush(stdout);
 
     if (count > 0) {
         fprintf(stderr,
@@ -142,6 +171,9 @@ void unlock_input()
 {
     // The rest of unlocking
     ClipCursor(NULL); // Win32 call, passing NULL unlocks the mouse bounds
+
+    hide_window();
+
     is_input_locked = FALSE;
     //fprintf(stderr, "[*] unlockInput complete\n");
     flush_down_keys();
@@ -161,7 +193,9 @@ int is_window_focused()
     if (window == NULL) {
         window = GetConsoleWindow();
     }
-    if (window == GetForegroundWindow()) {
+    // base_window_handle = gui window, window = console window
+    HWND base_window_handle = get_gui_handle();
+    if (base_window_handle == GetForegroundWindow() || window == GetForegroundWindow()) {
         is_offscreen = TRUE;
     } else {
         is_offscreen = FALSE;
@@ -239,8 +273,9 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data)
     }
 
     // output mouse movement accumulation
-    printf(".%ld,%ld\n", mouse_move_buff[0], mouse_move_buff[1]);
-    fflush(stdout);
+
+    sprintf(tmp_buffer, ".%ld,%ld\n", mouse_move_buff[0], mouse_move_buff[1]);
+    add_to_output_queue(tmp_buffer);
 
     // Reset state information for mouse movement buffering
     mouse_move_buff[0] = 0;
@@ -267,8 +302,8 @@ int register_mouse_click(MSLLHOOKSTRUCT *mouse_event_data, const int button,
     if (!is_offscreen) {
         return KEY_NORMAL;
     }
-    printf("*%d,%d\n", button, click_type);
-    fflush(stdout);
+    sprintf(tmp_buffer, "*%d,%d\n", button, click_type);
+    add_to_output_queue(tmp_buffer);
     // return KEY_NORMAL;
     return KEY_IGNORE; // ignore all input when offscreen
 }
@@ -300,6 +335,8 @@ int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
     // Handle pausing/unpausing
     if (is_paused && is_key_down && keyboard_event_data->vkCode == VK_PAUSE) {
         is_paused = FALSE;
+        lock_input();
+        is_window_focused();
         fprintf(stderr, "[+] Unpaused remote input lock\n");
         return KEY_IGNORE;
     } else if (!is_paused && is_key_down &&
@@ -330,15 +367,15 @@ int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
     }
 
     remove_spaces_from_str(tmp_buffer);
-
+    char buf[BUF_LEN] = {0}; // TODO: cleanup
     if (is_key_down) {
-        printf(",V%.*s\n", BUF_LEN, tmp_buffer);
+        sprintf(buf, ",V%.*s\n", BUF_LEN, tmp_buffer);
         key_set_add(msg);
     } else {
-        printf(",^%.*s\n", BUF_LEN, tmp_buffer);
+        printf(buf, ",^%.*s\n", BUF_LEN, tmp_buffer);
         key_set_erase(msg);
     }
-    fflush(stdout);
+    add_to_output_queue(buf);
 
     // return KEY_NORMAL;
     return KEY_IGNORE; // ignore all keys while offscreen
@@ -356,11 +393,10 @@ int register_mouse_scroll(MSLLHOOKSTRUCT *mouse_event_data)
     // WORD type is unsigned so checking for positive value
     // is easiest, negative value will be a large value.
     if ((mouse_event_data->mouseData >> 16) == WHEEL_DELTA) {
-        printf("|^\n");
+        add_to_output_queue("|^\n");
     } else {
-        printf("|v\n");
+        add_to_output_queue("|v\n");
     }
-    fflush(stdout);
 
     // return KEY_NORMAL;
     return KEY_IGNORE;

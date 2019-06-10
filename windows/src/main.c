@@ -9,6 +9,7 @@
 #include <Windows.h>
 #include "keyboardhook.h"
 #include "mousehook.h"
+#include "gui.h"
 /**
  * TODO:
  *  - Finalize spec for stdout format and mouse/key names/codes
@@ -24,6 +25,7 @@ void cleanup()
 {
     unhook_keyboard();
     unhook_mouse();
+    decimate_window(); // Try and clean up after our gui
     printf("[+] Bye!\n");
 }
 
@@ -42,16 +44,42 @@ void setup()
 }
 
 
-DWORD WINAPI input_thread_loop(void* arg)
+#ifdef WITH_GUI
+DWORD WINAPI gui_thread_loop(void* arg)
 {
-    atexit(cleanup);
-    setup();
+
+    initialize_window();
+
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
         // Loop forever
-        if (msg.message == WM_TIMER) {
-            DispatchMessage(&msg);
-        }
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    return EXIT_SUCCESS;
+}
+#endif
+
+
+DWORD WINAPI input_thread_loop(void* arg)
+{
+    setup();
+
+#ifdef WITH_GUI
+    HANDLE gui_thread = CreateThread(NULL, 0, gui_thread_loop, NULL, 0,
+            NULL);
+    if (gui_thread == NULL) {
+        fprintf(stderr, "[-] Failed to create gui thread\n");
+        exit(-4);
+    }
+#endif
+
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        // Loop forever
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
 
     return EXIT_SUCCESS;
@@ -60,6 +88,7 @@ DWORD WINAPI input_thread_loop(void* arg)
 
 int main()
 {
+    atexit(cleanup);
     // This disables quick-edit mode
     // I think this might clear a lot of flags that we want to clear
     // Making the console less likely to be able to be closed or resized

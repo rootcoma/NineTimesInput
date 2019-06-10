@@ -1,5 +1,9 @@
-#pragma once
+#ifndef INPUT_HANDLER_H
+#define INPUT_HANDLER_H
+
 #include <Windows.h>
+
+#define GOBBLE_INPUT
 
 // buttons
 #define BUTTON_LEFT     0x0
@@ -35,4 +39,6 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data);
 // return 1 to ignore key or 0 to pass the event on
 int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
         int is_alt_down);
+
+#endif
 

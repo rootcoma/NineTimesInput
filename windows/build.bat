@@ -8,7 +8,8 @@ set SRC_FILES=^
 src\main.c ^
 src\mousehook.c ^
 src\keyboardhook.c ^
-src\inputhandler.c
+src\inputhandler.c ^
+src\gui.c
 
 
 rem make all

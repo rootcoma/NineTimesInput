@@ -40,9 +40,11 @@ LRESULT CALLBACK keyboard_hook_cb(int code, WPARAM wp, LPARAM lp)
         break;
     }
 
+#ifdef GOBBLE_INPUT
     if (err == KEY_IGNORE) {
         return err;
     }
+#endif
 
     return CallNextHookEx(keyboard_hook_handle, code, wp, lp);
 }
