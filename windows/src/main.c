@@ -28,7 +28,7 @@ void cleanup()
     unhook_keyboard();
     unhook_mouse();
     decimate_window(); // Try and clean up after our gui
-    printf("[+] Bye!\n");
+    fprintf(stderr, "[+] Bye!\n");
 }
 
 
@@ -76,7 +76,7 @@ DWORD WINAPI input_thread_loop(void* arg)
 }
 
 
-int loop_until_exit()
+void loop_until_exit()
 {
     // TODO: More sophisticated looping and queueing
     char *plaintext;
@@ -95,21 +95,11 @@ int loop_until_exit()
         fflush(stdout);
         Sleep(2);
     }
-    return EXIT_SUCCESS;
 }
 
 
-int main()
+void spawn_all_main_threads()
 {
-    atexit(cleanup);
-    // This disables quick-edit mode
-    // I think this might clear a lot of flags that we want to clear
-    // Making the console less likely to be able to be closed or resized
-    HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
-    SetConsoleMode(hInput, 0x0);
-    SetConsoleMode(hInput, ENABLE_EXTENDED_FLAGS);
-    CloseHandle(hInput);
-
     HANDLE input_thread = CreateThread(NULL, 0, input_thread_loop, NULL, 0,
             NULL);
     if (input_thread == NULL) {
@@ -123,7 +113,29 @@ int main()
         fprintf(stderr, "[-] Failed to create gui thread\n");
         exit(-4);
     }
+}
 
-    return loop_until_exit();
+
+void disable_console_quick_edit_mode()
+{
+    // This disables quick-edit mode
+    // I think this might clear a lot of flags that we want to clear
+    // Making the console less likely to be able to be closed or resized
+    HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
+    SetConsoleMode(hInput, 0x0);
+    SetConsoleMode(hInput, ENABLE_EXTENDED_FLAGS);
+    CloseHandle(hInput);
+}
+
+
+int main()
+{
+    atexit(cleanup);
+
+    //disable_console_quick_edit_mode();
+    spawn_all_main_threads();
+    loop_until_exit();
+
+    return EXIT_SUCCESS;
 }
 

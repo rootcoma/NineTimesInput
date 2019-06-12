@@ -66,7 +66,7 @@ void initialize_window()
     window_class.hbrBackground = (HBRUSH)COLOR_WINDOW+1;
     window_class.lpszMenuName = NULL;
 
-    // Register the application
+    // Register the window class
     if(!RegisterClassEx(&window_class)) {
         fprintf(stderr, "Failed to register window class Error: 0x%lx\n",
                 GetLastError());
@@ -74,12 +74,16 @@ void initialize_window()
         return;
     }
 
-    base_window_handle = CreateWindowEx(0, class_name, window_title, WS_POPUPWINDOW,
-            screen_right/2-WIN_W/2, screen_bottom/2-WIN_H/2, WIN_W, WIN_H,
+    base_window_handle = CreateWindowEx(0, class_name, window_title,
+            WS_POPUPWINDOW,
+            screen_right/2-WIN_W/2,
+            screen_bottom/2-WIN_H/2,
+            WIN_W, WIN_H,
             NULL, NULL, instance_handle, NULL);
     
     if (base_window_handle == NULL) {
-        fprintf(stderr, "[-] Failed to create window. Error 0x%lx\n", GetLastError());
+        fprintf(stderr, "[-] Failed to create window. Error 0x%lx\n",
+                GetLastError());
         UnregisterClass(window_class.lpszClassName, instance_handle);
         gui_initialized = FALSE;
         return;
@@ -109,13 +113,13 @@ void show_window()
     // Get window to top Z
     // https://stackoverflow.com/questions/916259/
     HWND current_foreground_handle = GetForegroundWindow();
-    DWORD foreground_thread_id = GetWindowThreadProcessId(current_foreground_handle, NULL);
+    DWORD foreground_thread_id =\
+            GetWindowThreadProcessId(current_foreground_handle, NULL);
     DWORD thread_id = GetCurrentThreadId();
     AttachThreadInput(foreground_thread_id, thread_id, TRUE);
     // Set always topmost
-    SetWindowPos(base_window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-    // Could reset if we wanted to..
-    //SetWindowPos(base_window_handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    SetWindowPos(base_window_handle, HWND_TOPMOST, 0, 0, 0, 0,
+            SWP_NOSIZE|SWP_NOMOVE);
     SetForegroundWindow(base_window_handle);
     AttachThreadInput(foreground_thread_id, thread_id, FALSE);
     

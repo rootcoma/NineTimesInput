@@ -3,33 +3,30 @@
 #include "mousehook.h"
 #include "inputhandler.h"
 #include "gui.h"
+#include "keydefs.h"
 
+#define MOUSE_MOVE_MIN_MS 10
 #define MAX_DOWN_KEYS 42
-#define MIN_MOUSE_TICKS 10
-#define QUEUE_LEN 128
+#define QUEUE_LEN 64
+#define NUM_MOUSE_BUTTONS 5
 
-// State information
+
 BOOL is_offscreen = FALSE; // is input sent to remote server
 BOOL is_paused = FALSE; // did the user pause
-BOOL is_input_locked = FALSE; // are we holding input captive
-ULONGLONG last_mouse_move_millis = 0;
-UINT_PTR mouse_move_timer = 0;
-LONG mouse_move_buff[2] = { 0 };
-
-// buffers to avoid allocations
+BOOL is_input_locked = FALSE; // holding input captive
+ULONGLONG last_mouse_move_millis = 0; // Last mouse move event in ms
+UINT_PTR mouse_move_timer = 0; // Win32 Timer callback id
+LONG mouse_move_buff[2] = { 0, 0, }; // accumulates mouse moves
 DWORD down_keys[MAX_DOWN_KEYS] = { 0 };
-char tmp_buffer[BUF_LEN] = { 0 };
+BOOL down_mouse_buttons[NUM_MOUSE_BUTTONS] = { 0 }; // 1 = pressed
 
-// Output buffer, need to let hooks return
-char output_queue[QUEUE_LEN][BUF_LEN] = {{0}};
+char output_queue[QUEUE_LEN][BUF_LEN] = {{ 0 }};
 int output_queue_offset = 0;
 int output_dequeue_offset = 0;
 
-// global storage for values to avoid Win32 calls
 int window_center_y; // storage for centerY of this ConsoleWindow when queried
 int window_center_x; // same and for center X
-                    // TODO: Is this a handle that needs to be closed?
-HWND window = NULL; // storage for HWND from `GetConsoleWindow`
+                     // TODO: Is this a handle that needs to be closed?
 
 
 char* dequeue_output()
@@ -44,16 +41,29 @@ char* dequeue_output()
 }
 
 
-void add_to_output_queue(char *output_item)
+void add_to_queuef(char *output_fmt, ...)
 {
     if (output_queue_offset >= QUEUE_LEN) {
         output_queue_offset = 0;
     }
-    strncpy_s(output_queue[output_queue_offset++], BUF_LEN-1, output_item, BUF_LEN-1);
+    char *output = output_queue[output_queue_offset++];
+    va_list args_list;
+    va_start(args_list, output_fmt);
+    vsprintf_s(output, BUF_LEN, output_fmt, args_list);
+    va_end(args_list);
 }
 
 
-// Helper to remove keys that are released
+void add_to_queue(char *output_item)
+{
+    if (output_queue_offset >= QUEUE_LEN) {
+        output_queue_offset = 0;
+    }
+    strncpy_s(output_queue[output_queue_offset++], BUF_LEN-1,
+            output_item, BUF_LEN-1);
+}
+
+
 void key_set_erase(const DWORD msg)
 {
     int i = 0;
@@ -66,7 +76,6 @@ void key_set_erase(const DWORD msg)
 }
 
 
-// Helper to keep add keys that are pressed
 void key_set_add(const DWORD msg)
 {
     int i = 0;
@@ -87,63 +96,58 @@ void key_set_add(const DWORD msg)
 }
 
 
-// Uses Win32 `SetCursorPos` to re-center mouse
-void reset_locked_mouse()
+void center_locked_mouse()
 {
     if (!is_offscreen || !is_input_locked) {
         fprintf(stderr,
                 "[-] Attempted to reset mouse when input is not locked.\n");
         return;
     }
-    SetCursorPos(window_center_x, window_center_y); // Win32 call
+    SetCursorPos(window_center_x, window_center_y);
     //fprintf(stderr, "[*] Reset mouse position\n");
 }
 
 
-// ConsoleWindow (this program) is set focused
-// Win32 `ClipCursor` is called in center of this program's window
-// the mouse is moved to the center of this program
-// the flag for input being locked is set.
 void lock_input()
 {
-    // Query window rect
     RECT rect = { 0, 0, 0, 0 };
 
     show_window();
     HWND base_window_handle = get_gui_handle();
-    SetForegroundWindow(base_window_handle); // Win32 calls
+    SetForegroundWindow(base_window_handle);
     SetActiveWindow(base_window_handle);
     SetFocus(base_window_handle);
     if(!GetWindowRect(base_window_handle, &rect)) {
-        fprintf(stderr, "[-] Failed accessing base_window_handle rect. error: 0x%lx\n", GetLastError());
+        fprintf(stderr, "[-] GetWindowRect base_window_handle. error: 0x%lx\n",
+                GetLastError());
     }
 
     window_center_y = rect.bottom/2 + rect.top/2;
     window_center_x = rect.right/2 + rect.left/2;
 
-    // Reuse rect to Clip mous
     rect.top = window_center_y;
     rect.bottom = window_center_y + 1; // +1 works well
     rect.left = window_center_x;
     rect.right = window_center_x + 1;
-    ClipCursor(&rect); // Win32 call
+    ClipCursor(&rect);
 
     // Center mouse
-    reset_locked_mouse();
+    center_locked_mouse();
 
     is_input_locked = TRUE;
     //fprintf(stderr, "[*] lockInput complete\n");
 }
 
 
-// If the program loses focus or is about to pause, find any 
+// If the program loses focus or is about to pause, find any
+// TODO: rename it includes mouse
 void flush_down_keys()
 {
     // resolve issues when switching offscreen with keys is_key_down
     // Send all the is_key_down keys back up, don't leave any keys pressed
     int i = 0;
     int count = 0;
-    char key_buffer[BUF_LEN] = {0};
+    char key_buffer[BUF_LEN] = { 0 };
     for (i=0;i<MAX_DOWN_KEYS;i++) {
         if (down_keys[i] == 0) {
             continue;
@@ -154,39 +158,44 @@ void flush_down_keys()
                     down_keys[i]);
             continue;
         }
-        sprintf(tmp_buffer, ",^%.*s\n", BUF_LEN, key_buffer);
-        add_to_output_queue(tmp_buffer);
+        add_to_queuef(",^%.*s\n", BUF_LEN, key_buffer);
         down_keys[i] = 0;
         count++;
     }
 
     if (count > 0) {
         fprintf(stderr,
-                "[>] Sent %d keys that were down before input was unlocked\n",
+                "[>] Sent %d keys that were pressed while locked\n",
+                count);
+    }
+
+    count = 0;
+    for (i=0;i<NUM_MOUSE_BUTTONS;i++) {
+        if (down_mouse_buttons[i] == 0) {
+            continue;
+        }
+        add_to_queuef("*i,1\n", BUF_LEN, key_buffer);
+        count++;
+    }
+
+    if (count > 0) {
+        fprintf(stderr,
+                "[>] Sent %d mouse buttons that were pressed while locked\n",
                 count);
     }
 }
 
 
-// Undo anything that locked mouse and keyboard input while sending
-// input data to stdout
 void unlock_input()
 {
-    // The rest of unlocking
     ClipCursor(NULL); // Win32 call, passing NULL unlocks the mouse bounds
-
     hide_window();
-
+    flush_down_keys();
     is_input_locked = FALSE;
     //fprintf(stderr, "[*] unlockInput complete\n");
-    flush_down_keys();
 }
 
 
-// If the console window is the foreground window then the window is
-// in focus. If the "Pause" is not enabled, then inputs will be sent
-// to stdout and mouse and keyboard input will be "locked". Pressing
-// "Pause" will toggle pause;
 int is_window_focused()
 {
     if (is_paused) {
@@ -194,21 +203,16 @@ int is_window_focused()
         return FALSE;
     }
 
-    if (window == NULL) {
-        window = get_gui_handle();
-    }
-    if (window == GetForegroundWindow()) {
+    if (get_gui_handle() == GetForegroundWindow()) {
         is_offscreen = TRUE;
     } else {
         is_offscreen = FALSE;
-        // TODO: Focus, foreground and top z window
     }
-    //fprintf(stderr, "[*] isWindowFocused() -> %d\n", offscreen);
     return is_offscreen;
+    //fprintf(stderr, "[*] isWindowFocused() -> %d\n", offscreen);
 }
 
 
-// Called by timeout to allow for buffering of mouse movement
 void CALLBACK mouse_move_timer_cb(HWND arg1, UINT arg2, UINT_PTR arg3,
         DWORD arg4)
 {
@@ -219,33 +223,28 @@ void CALLBACK mouse_move_timer_cb(HWND arg1, UINT arg2, UINT_PTR arg3,
 }
 
 
-// Sends relative movement data from mouse to stdout, the mouse is
-// reset to the center of the window after reading movement to keep
-// the window in focus and track relative movement again.
 void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data)
 {
-    // fprintf(stderr, "is_offscreen: %d, is_input_locked: %d\n",
-    //         is_offscreen, is_input_locked);
     // Mouse button and keyboard key presses re-evaluate if this
-    // program is in focus and updates offscreen to true if so
+    // program is in focused and updates offscreen to true if so
     if (!is_offscreen) {
-        mouse_move_buff[0] = 0;
-        mouse_move_buff[1] = 0;
+        // mouse_move_buff[0] = 0;
+        // mouse_move_buff[1] = 0;
         return;
     }
 
     // hide/force-focus mouse before entering here
     if (!is_input_locked) {
-        lock_input();
         mouse_move_buff[0] = 0;
         mouse_move_buff[1] = 0;
+        lock_input();
         return;
     }
 
     ULONGLONG current_millis = GetTickCount64();
-    // limit mouse updates to 1 packet per MIN_MOUSE_TICKS milliseconds
+    // limit mouse updates to 1 packet per MOUSE_MOVE_MIN_MS milliseconds
     if (mouse_event_data != NULL &&
-            (current_millis - last_mouse_move_millis) < MIN_MOUSE_TICKS) {
+            (current_millis - last_mouse_move_millis) < MOUSE_MOVE_MIN_MS) {
         mouse_move_buff[0] += mouse_event_data->pt.x - window_center_x;
         mouse_move_buff[1] += mouse_event_data->pt.y - window_center_y;
 
@@ -254,7 +253,7 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data)
             // fprintf(stderr, "[*] Creating timer for mouse move buf %llud\n",
             //     current_millis);
             mouse_move_timer = SetTimer(NULL, 1,
-                MIN_MOUSE_TICKS-(current_millis-last_mouse_move_millis),
+                MOUSE_MOVE_MIN_MS-(current_millis-last_mouse_move_millis),
                 mouse_move_timer_cb);
             if (!mouse_move_timer) {
                 fprintf(stderr,
@@ -263,7 +262,7 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data)
         }
 
         // Reset mouse to center and return early
-        reset_locked_mouse();
+        center_locked_mouse();
         return;
     }
 
@@ -275,9 +274,7 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data)
     }
 
     // output mouse movement accumulation
-
-    sprintf(tmp_buffer, ".%ld,%ld\n", mouse_move_buff[0], mouse_move_buff[1]);
-    add_to_output_queue(tmp_buffer);
+    add_to_queuef(".%ld,%ld\n", mouse_move_buff[0], mouse_move_buff[1]);
 
     // Reset state information for mouse movement buffering
     mouse_move_buff[0] = 0;
@@ -290,48 +287,26 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data)
 
     // center the mouse on the screen
     is_window_focused();
-    reset_locked_mouse();
+    center_locked_mouse();
 }
 
 
-// Sends mouseclick data, such as which button and direction of click, to 
-// stdout. Non-standard enum is used for button ids, 0=left, 1=right,
-// 2=scroll wheel, 3=x button1, 4=x button2
 int register_mouse_click(MSLLHOOKSTRUCT *mouse_event_data, const int button,
-        const int click_type)
+        const int is_up)
 {
     // TODO: detect if click is on our window?
     is_window_focused();
     if (!is_offscreen) {
         return KEY_NORMAL;
     }
-    sprintf(tmp_buffer, "*%d,%d\n", button, click_type);
-    add_to_output_queue(tmp_buffer);
-    // return KEY_NORMAL;
-    return KEY_IGNORE; // ignore all input when offscreen
-}
+    add_to_queuef("*%d,%d\n", button, is_up);
+    down_mouse_buttons[button] = is_up ? 0 : 1; // stored opposite
 
-
-// Removes spaces from `str`
-void remove_spaces_from_str(char *str)
-{
-    const size_t str_len = strlen(str);
-    assert(str_len > 0);
-    int i = 0;
-    int skip = 0;
-    for (i = 0; (i+skip) < str_len; i++) {
-        while (str[i + skip] == ' ') {
-            skip++;
-        }
-        str[i] = str[i+skip];
-    }
-    str[i] = '\0';
+    return KEY_IGNORE; // ignore all input when sending to remote client
 }
 
 
 // Returning 0 will cause the next keyboard hook to be called 1 will skip it
-// InputHandler sends all keystrokes over stdout as a string description of the
-// character such as "A", ";", "Return", "RightShift" instead of a code
 int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
         int is_alt_down)
 {
@@ -354,38 +329,29 @@ int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
     }
 
     // Re-check if remote input is enabled
-    is_window_focused(); // Update if we in focus
+    is_window_focused();
     if (!is_offscreen) {
         return KEY_NORMAL;
     }
-    
-    DWORD msg = keyboard_event_data->scanCode << 16;
-    if (keyboard_event_data->vkCode != VK_RSHIFT) {
-        msg |= (keyboard_event_data->flags & LLKHF_EXTENDED) << 24;
-    }
 
-    if (!GetKeyNameTextA(msg, tmp_buffer, BUF_LEN - 1)) {
-        fprintf(stderr, "[-] Could not get name of key. msg: %lu\n", msg);
-        return KEY_NORMAL;
-    }
+    unsigned char keycode =\
+            windows_vk_to_linux_keycode(keyboard_event_data->vkCode);
 
-    remove_spaces_from_str(tmp_buffer);
-    char buf[BUF_LEN] = {0}; // TODO: cleanup
+    //fprintf(stderr, "Windows: %lu, Linux: %u\n",
+    //        keyboard_event_data->vkCode, keycode);
+
     if (is_key_down) {
-        sprintf(buf, ",V%.*s\n", BUF_LEN, tmp_buffer);
-        key_set_add(msg);
+        add_to_queuef(",v%ud\n", keycode);
+        key_set_add(keycode);
     } else {
-        sprintf(buf, ",^%.*s\n", BUF_LEN, tmp_buffer);
-        key_set_erase(msg);
+        add_to_queuef(",^%ud\n", keycode);
+        key_set_erase(keycode);
     }
-    add_to_output_queue(buf);
 
-    // return KEY_NORMAL;
-    return KEY_IGNORE; // ignore all keys while offscreen
+    return KEY_IGNORE;
 }
 
 
-// Parse if it is mouse scroll up or is_key_down and send to stdout
 int register_mouse_scroll(MSLLHOOKSTRUCT *mouse_event_data)
 {
     if (!is_offscreen) {
@@ -396,12 +362,11 @@ int register_mouse_scroll(MSLLHOOKSTRUCT *mouse_event_data)
     // WORD type is unsigned so checking for positive value
     // is easiest, negative value will be a large value.
     if ((mouse_event_data->mouseData >> 16) == WHEEL_DELTA) {
-        add_to_output_queue("|^\n");
+        add_to_queue("|^\n");
     } else {
-        add_to_output_queue("|v\n");
+        add_to_queue("|v\n");
     }
 
-    // return KEY_NORMAL;
     return KEY_IGNORE;
 }
 

@@ -1,6 +1,5 @@
 #ifndef INPUT_HANDLER_H
 #define INPUT_HANDLER_H
-
 #include <Windows.h>
 
 #define BUF_LEN 24
@@ -40,7 +39,10 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data);
 int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
         int is_alt_down);
 
+
+// Get 1 line of formatted output for stdout that represents input
 char *dequeue_output();
+
 
 #endif
 

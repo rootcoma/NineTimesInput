@@ -1,0 +1,8 @@
+# Ignore directories that are not important
+
+# Build results
+build/*
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+

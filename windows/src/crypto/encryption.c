@@ -5,8 +5,8 @@
 
 #define CRYPTO_CONTEXT_ID "kxm"
 
-// XXX: Temporary keys, need to find a way to transfer keys safely, or allow user to
-//      select new keys.
+// XXX: Temporary keys, need to find a way to transfer keys safely, or allow
+//      user to select new keys.
 // xsalsa20_xor key, 32 bytes
 const unsigned char kxm_crypto_k[crypto_stream_KEYBYTES] = {
     '0', '1', '2', '3', '4', '5', '6', '7',
