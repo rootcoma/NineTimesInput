@@ -2,15 +2,17 @@ PROGRAM_NAME=kxm
 
 SOURCE_FILES=\
     src/main.c \
+    src/tweetnacl.c \
+    src/encryption.c \
 
 CC_FLAGS=\
-    -O2 \
-    -Wall \
-    -Werror \
+	-O2 \
+	-Wall \
+	-Werror \
 
 LINKER_FLAGS=\
-    -lXtst \
-    -lX11 \
+	-lXtst \
+	-lX11 \
 
 all:
 	mkdir -p build
@@ -22,3 +24,4 @@ test:
 
 clean:
 	rm -rf build/*
+

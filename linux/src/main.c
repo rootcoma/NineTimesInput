@@ -2,17 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-//#include <X11/X.h>
-//#include <X11/Xlib.h>
-//#include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
+#include "encryption.h"
+
+// Make sure BUFFER_LEN < INT_MAX
+// This needs to match everywhere for xor process to work right now
+#define BUF_LEN 24
 
 /**
  * TODO:
  *  - Clear all down keys when program exits
  *  - Figure out which enums are needed for both x buttons
  */
-Display *dpy; // Holds X display which allows for input injection
+Display *display; // Holds X display which allows for input injection
 
 Window root_window; // Not sure if needed globally
 
@@ -45,17 +47,17 @@ void mouse_click(const int button, const int click_type)
     }
     
     if (click_type == 0) {
-        XTestFakeButtonEvent(dpy, button_enum, True, CurrentTime);
+        XTestFakeButtonEvent(display, button_enum, True, CurrentTime);
     } else {
-        XTestFakeButtonEvent(dpy, button_enum, False, CurrentTime);
+        XTestFakeButtonEvent(display, button_enum, False, CurrentTime);
     }
-    XFlush(dpy);
+    XFlush(display);
     //fprintf(stderr, "[*] Button click: button: %d, clickType: %d\n",
     //        button, click_type);
 }
 
 
-KeyCode convertToKeyCode(const char* char_str)
+KeyCode convert_to_key_code(const char* char_str)
 {
     static const char *conversions[] = {
             "Alt",            "Alt_L",
@@ -106,14 +108,14 @@ KeyCode convertToKeyCode(const char* char_str)
     };
     for(int i=0; i<sizeof(conversions)/sizeof(const char*); i+=2) {
         if (!strcmp(conversions[i], char_str)) {
-            return XKeysymToKeycode(dpy, XStringToKeysym(conversions[i+1]));
+            return XKeysymToKeycode(display, XStringToKeysym(conversions[i+1]));
         }
     }
     if (strlen(char_str) == 1) {
-        return XKeysymToKeycode(dpy, XStringToKeysym(char_str));
+        return XKeysymToKeycode(display, XStringToKeysym(char_str));
     }
 
-    KeyCode ret = XKeysymToKeycode(dpy, XStringToKeysym(char_str));
+    KeyCode ret = XKeysymToKeycode(display, XStringToKeysym(char_str));
     if (ret == 0) {
         fprintf(stderr, "[*] Missing Input: %s\n", char_str);
     }
@@ -121,92 +123,113 @@ KeyCode convertToKeyCode(const char* char_str)
 }
 
 
-void send_key(const char* char_str, const int down)
+void keyboard_press(const char* char_str, const int down)
 {
-    KeyCode keyCode = convertToKeyCode(char_str);
-    if (keyCode == 0) {
+    KeyCode key_code = convert_to_key_code(char_str);
+    if (key_code == 0) {
         return;
     }
-    XTestFakeKeyEvent(dpy, keyCode, down ? True : False, CurrentTime);
-    XFlush(dpy);
+    XTestFakeKeyEvent(display, key_code, down ? True : False, CurrentTime);
+    XFlush(display);
 }
 
 
-void move_to(const int x, const int y)
+void mouse_move_to(const int x, const int y)
 {
-    XTestFakeRelativeMotionEvent(dpy, x, y, CurrentTime);
-    XFlush(dpy);
+    XTestFakeRelativeMotionEvent(display, x, y, CurrentTime);
+    XFlush(display);
+}
+
+
+void parse_command(char *cmd)
+{
+#ifndef SKIP_SAFE_CHECK	
+	int i = 0;
+	for(i=0;i<BUF_LEN;i++) {
+		if (cmd[i] == '\n') {
+			break;
+		}
+	}
+	if (i >= BUF_LEN || i < 2) {
+		fprintf(stderr, "[-] Could not find newline, discarding\n");
+		return;
+	}
+#endif
+	size_t num_read = 0;
+	int x = 0;
+	int y = 0;
+	char tmp[BUF_LEN] = { 0 };
+    switch (cmd[0]) {
+        case '.': // Mouse move
+            num_read = sscanf(&cmd[1], "%d,%d", &x, &y);
+            if (num_read != 2) {
+                return; // Invalid data
+            }
+            mouse_move_to(x, y);
+            break;
+        case '*': // Mouse Click
+            num_read = sscanf(&cmd[1], "%d,%d", &x, &y);
+            if (num_read != 2) {
+                return; // Invalid data
+            }
+            mouse_click(x, y); // button = x, clickType = y
+            break;
+        case '|': // Mouse Scroll
+            if (cmd[1] != '^' && cmd[1] != 'V' && cmd[1] != 'v') {
+                return; // Invalid char
+            }
+            x = cmd[1] == '^' ? 4 : 3;
+            mouse_click(x, 0); // x = button, 3 x1, 4 x2
+            mouse_click(x, 1);
+            break;
+        case ',': // Key press;
+            if (cmd[1] != '^' && cmd[1] != 'V' && cmd[1] != 'v') {
+                return; // Invalid char
+            }
+            num_read = sscanf(&cmd[2],"%22s", tmp);
+            if (num_read != 1) {
+                return; // Invalid data
+            }
+            x = cmd[1] == '^' ? 0 : 1;
+            keyboard_press(tmp, x); // tmp = Key Name, x = down
+            break;
+    }
 }
 
 
 void loop()
 {
-    char c = ' ';
-    char tmp[32] = { 0 };
-    int num_read = -1;
-    int x = 0;
-    int y = 0;
-    while(c != EOF) {
-        c = getchar();
-        switch (c) {
-        case '.': // Mouse move
-            num_read = scanf("%d,%d", &x, &y);
-            if (num_read != 2) {
-                continue; // Invalid data
-            }
-            move_to(x, y); // move the mouse
-            break;
-        case '*': // Mouse Click
-            num_read = scanf("%d,%d", &x, &y);
-            if (num_read != 2) {
-                continue; // Invalid data
-            }
-            // button = x, clickType = y
-            mouse_click(x, y);
-            break;
-        case '|': // Mouse Scroll
-            c = getchar();
-            if (c != '^' && c != 'V' && c != 'v') {
-                continue; // Invalid char
-            }
-            x = c == '^' ? 4 : 3;
-            // x = button, 3 x1, 4 x2
-            mouse_click(x, 0);
-            mouse_click(x, 1);
-            break;
-        case ',': // Key press
-            c = getchar();
-            if (c != '^' && c != 'V' && c != 'v') {
-                continue; // Invalid char
-            }
-            num_read = scanf("%31s", tmp);
-            if (num_read != 1) {
-                continue; // Invalid data
-            }
-            x = c == '^' ? 0 : 1;
-            // tmp = Key Name, x = down
-            send_key(tmp, x);
-            break;
-        }
-    }
+	unsigned char buffer[BUF_LEN] = { 0 };
+	char decrypt_buffer[BUF_LEN] = { 0 };
+	int num_read = 0;
+
+	while (!feof(stdin)) {
+		num_read = (int)fread(buffer, sizeof(unsigned char), BUF_LEN, stdin);
+		if (num_read == 0 || num_read != BUF_LEN) {
+			fprintf(stderr, "[-] read failed size: %ul, Max: %ul\n", num_read, BUF_LEN);
+			continue;
+		}
+		output_decrypt(decrypt_buffer, buffer, BUF_LEN);
+		parse_command(decrypt_buffer);
+	}
 }
 
 
 void cleanup()
 {
-    XCloseDisplay(dpy);
+    XCloseDisplay(display);
     fprintf(stderr, "[+] Bye!\n");
 }
 
 
 void setup()
 {
-    dpy = XOpenDisplay(0);
-    if (dpy == NULL) {
+    display = XOpenDisplay(0);
+    if (display == NULL) {
         fprintf(stderr, "[-] Failed to open XDisplay, exiting");
         exit(-1);
     }
-    root_window = XRootWindow(dpy, 0);
+    root_window = XRootWindow(display, 0);
 }
 
 
