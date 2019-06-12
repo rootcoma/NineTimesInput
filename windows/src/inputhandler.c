@@ -17,7 +17,7 @@ BOOL is_input_locked = FALSE; // holding input captive
 ULONGLONG last_mouse_move_millis = 0; // Last mouse move event in ms
 UINT_PTR mouse_move_timer = 0; // Win32 Timer callback id
 LONG mouse_move_buff[2] = { 0, 0, }; // accumulates mouse moves
-DWORD down_keys[MAX_DOWN_KEYS] = { 0 };
+unsigned char down_keys[MAX_DOWN_KEYS] = { 0 };
 BOOL down_mouse_buttons[NUM_MOUSE_BUTTONS] = { 0 }; // 1 = pressed
 
 char output_queue[QUEUE_LEN][BUF_LEN] = {{ 0 }};
@@ -64,11 +64,11 @@ void add_to_queue(char *output_item)
 }
 
 
-void key_set_erase(const DWORD msg)
+void key_set_erase(const unsigned char vk_code)
 {
     int i = 0;
     for (i = 0; i < MAX_DOWN_KEYS; i++) {
-        if (down_keys[i] == msg) {
+        if (down_keys[i] == vk_code) {
             down_keys[i] = 0; // Mark for re-use
             return;
         }
@@ -76,12 +76,12 @@ void key_set_erase(const DWORD msg)
 }
 
 
-void key_set_add(const DWORD msg)
+void key_set_add(const unsigned char vk_code)
 {
     int i = 0;
     int free_i = -1;
     for (i = 0; i < MAX_DOWN_KEYS; i++) {
-        if (down_keys[i] == msg) {
+        if (down_keys[i] == vk_code) {
             return; // Sets don't have duplicates
         }
         if (free_i == -1 && down_keys[i] == 0) {
@@ -92,7 +92,7 @@ void key_set_add(const DWORD msg)
         fprintf(stderr, "[>] Ran out of downKey buffer space\n");
         return; // Ignore this error, something wrong or user is at fault
     }
-    down_keys[free_i] = msg;
+    down_keys[free_i] = vk_code;
 }
 
 
@@ -147,18 +147,11 @@ void flush_down_keys()
     // Send all the is_key_down keys back up, don't leave any keys pressed
     int i = 0;
     int count = 0;
-    char key_buffer[BUF_LEN] = { 0 };
     for (i=0;i<MAX_DOWN_KEYS;i++) {
         if (down_keys[i] == 0) {
             continue;
         }
-        if (!GetKeyNameTextA(down_keys[i], key_buffer, BUF_LEN - 1)) {
-            fprintf(stderr,
-                    "[-] Could not get name of key in unlockInput. msg: %lu\n",
-                    down_keys[i]);
-            continue;
-        }
-        add_to_queuef(",^%.*s\n", BUF_LEN, key_buffer);
+        add_to_queuef(",^%u\n", down_keys[i]);
         down_keys[i] = 0;
         count++;
     }
@@ -341,10 +334,10 @@ int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
     //        keyboard_event_data->vkCode, keycode);
 
     if (is_key_down) {
-        add_to_queuef(",v%ud\n", keycode);
+        add_to_queuef(",v%u\n", keycode);
         key_set_add(keycode);
     } else {
-        add_to_queuef(",^%ud\n", keycode);
+        add_to_queuef(",^%u\n", keycode);
         key_set_erase(keycode);
     }
 
