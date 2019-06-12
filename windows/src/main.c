@@ -1,4 +1,4 @@
-#define _WIN32_WINNT _WIN32_WINNT_WIN7
+#define _WIN32_WINNT _WIN32_WINNT_WINXP
 #define NTDDI_VERSION NTDDI_VERSION_FROM_WIN32_WINNT
 /**
  * Software made by a person, using examples from other people,
@@ -9,6 +9,9 @@
 #include <Windows.h>
 #include "keyboardhook.h"
 #include "mousehook.h"
+#include "inputhandler.h"
+#include "gui.h"
+#include "encryption.h"
 /**
  * TODO:
  *  - Finalize spec for stdout format and mouse/key names/codes
@@ -24,6 +27,7 @@ void cleanup()
 {
     unhook_keyboard();
     unhook_mouse();
+    decimate_window(); // Try and clean up after our gui
     printf("[+] Bye!\n");
 }
 
@@ -42,24 +46,62 @@ void setup()
 }
 
 
-DWORD WINAPI input_thread_loop(void* arg)
+DWORD WINAPI gui_thread_loop(void* arg)
 {
-    atexit(cleanup);
-    setup();
+    initialize_window();
+
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
         // Loop forever
-        if (msg.message == WM_TIMER) {
-            DispatchMessage(&msg);
-        }
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
 
     return EXIT_SUCCESS;
 }
 
 
+DWORD WINAPI input_thread_loop(void* arg)
+{
+    setup();
+
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        // Loop forever
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    return EXIT_SUCCESS;
+}
+
+
+int loop_until_exit()
+{
+    // TODO: More sophisticated looping and queueing
+    char *plaintext;
+    unsigned char cipher_text[BUF_LEN] = {0};
+    while (1) {
+        plaintext = dequeue_output();
+        if (plaintext == NULL) {
+            Sleep(5);
+            continue;
+        }
+        while (plaintext != NULL) {
+            output_encrypt(cipher_text, plaintext, BUF_LEN);
+            fwrite(cipher_text, sizeof(unsigned char), BUF_LEN, stdout);
+            plaintext = dequeue_output();
+        }
+        fflush(stdout);
+        Sleep(2);
+    }
+    return EXIT_SUCCESS;
+}
+
+
 int main()
 {
+    atexit(cleanup);
     // This disables quick-edit mode
     // I think this might clear a lot of flags that we want to clear
     // Making the console less likely to be able to be closed or resized
@@ -75,8 +117,13 @@ int main()
         exit(-3);
     }
 
-    WaitForSingleObject(input_thread, INFINITE);
+    HANDLE gui_thread = CreateThread(NULL, 0, gui_thread_loop, NULL, 0,
+            NULL);
+    if (gui_thread == NULL) {
+        fprintf(stderr, "[-] Failed to create gui thread\n");
+        exit(-4);
+    }
 
-    return EXIT_SUCCESS;
+    return loop_until_exit();
 }
 

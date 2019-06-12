@@ -2,13 +2,16 @@ set PROGRAM_NAME=kxm.exe
 
 set CC_FLAGS=-O2
 
-set LINKER_FLAGS=-luser32
+set LINKER_FLAGS=-luser32 -ladvapi32
 
 set SRC_FILES=^
 src\main.c ^
 src\mousehook.c ^
 src\keyboardhook.c ^
-src\inputhandler.c
+src\inputhandler.c ^
+src\gui.c ^
+src\tweetnacl.c ^
+src\encryption.c
 
 
 rem make all
