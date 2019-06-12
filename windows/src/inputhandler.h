@@ -3,7 +3,7 @@
 
 #include <Windows.h>
 
-#define GOBBLE_INPUT
+#define BUF_LEN 24
 
 // buttons
 #define BUTTON_LEFT     0x0
@@ -39,6 +39,8 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data);
 // return 1 to ignore key or 0 to pass the event on
 int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
         int is_alt_down);
+
+char *dequeue_output();
 
 #endif
 

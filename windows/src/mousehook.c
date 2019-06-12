@@ -77,11 +77,9 @@ LRESULT CALLBACK mouse_event_cb(int code, WPARAM wp, LPARAM lp)
         break;
     }
 
-#ifdef GOBBLE_INPUT
     if (err == KEY_IGNORE) {
         return err;
     }
-#endif
 
     return CallNextHookEx(mouse_hook_handle, code, wp, lp);
 }

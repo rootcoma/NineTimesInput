@@ -1,7 +1,6 @@
 #ifndef GUI_H
 #define GUI_H
 
-#define WITH_GUI
 
 const HWND get_gui_handle();
 

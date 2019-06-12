@@ -5,9 +5,8 @@
 #include "gui.h"
 
 #define MAX_DOWN_KEYS 42
-#define BUF_LEN 32
 #define MIN_MOUSE_TICKS 10
-#define QUEUE_LEN 10
+#define QUEUE_LEN 128
 
 // State information
 BOOL is_offscreen = FALSE; // is input sent to remote server
@@ -24,6 +23,7 @@ char tmp_buffer[BUF_LEN] = { 0 };
 // Output buffer, need to let hooks return
 char output_queue[QUEUE_LEN][BUF_LEN] = {{0}};
 int output_queue_offset = 0;
+int output_dequeue_offset = 0;
 
 // global storage for values to avoid Win32 calls
 int window_center_y; // storage for centerY of this ConsoleWindow when queried
@@ -32,12 +32,24 @@ int window_center_x; // same and for center X
 HWND window = NULL; // storage for HWND from `GetConsoleWindow`
 
 
+char* dequeue_output()
+{
+    if (output_dequeue_offset == output_queue_offset) {
+        return NULL;
+    }
+    if (output_dequeue_offset >= QUEUE_LEN) {
+        output_dequeue_offset = 0;
+    }
+    return output_queue[output_dequeue_offset++];
+}
+
+
 void add_to_output_queue(char *output_item)
 {
     if (output_queue_offset >= QUEUE_LEN) {
         output_queue_offset = 0;
     }
-    strncpy_s(output_queue[output_queue_offset++], 31, output_item, 31);
+    strncpy_s(output_queue[output_queue_offset++], BUF_LEN-1, output_item, BUF_LEN-1);
 }
 
 
@@ -94,12 +106,9 @@ void reset_locked_mouse()
 // the flag for input being locked is set.
 void lock_input()
 {
-    // TODO: WIP gui for capturing input
-
     // Query window rect
     RECT rect = { 0, 0, 0, 0 };
 
-#ifdef WITH_GUI
     show_window();
     HWND base_window_handle = get_gui_handle();
     SetForegroundWindow(base_window_handle); // Win32 calls
@@ -108,12 +117,6 @@ void lock_input()
     if(!GetWindowRect(base_window_handle, &rect)) {
         fprintf(stderr, "[-] Failed accessing base_window_handle rect. error: 0x%lx\n", GetLastError());
     }
-#else
-    SetForegroundWindow(window); // Win32 calls
-    SetActiveWindow(window);
-    SetFocus(window);
-    GetWindowRect(window, &rect);
-#endif
 
     window_center_y = rect.bottom/2 + rect.top/2;
     window_center_x = rect.right/2 + rect.left/2;
@@ -190,16 +193,15 @@ int is_window_focused()
         is_offscreen = FALSE;
         return FALSE;
     }
+
     if (window == NULL) {
-        window = GetConsoleWindow();
+        window = get_gui_handle();
     }
-    // base_window_handle = gui window, window = console window
-    HWND base_window_handle = get_gui_handle();
-    if (base_window_handle == GetForegroundWindow() || window == GetForegroundWindow()) {
+    if (window == GetForegroundWindow()) {
         is_offscreen = TRUE;
     } else {
         is_offscreen = FALSE;
-        unlock_input();
+        // TODO: Focus, foreground and top z window
     }
     //fprintf(stderr, "[*] isWindowFocused() -> %d\n", offscreen);
     return is_offscreen;
@@ -287,6 +289,7 @@ void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data)
     }
 
     // center the mouse on the screen
+    is_window_focused();
     reset_locked_mouse();
 }
 
@@ -372,7 +375,7 @@ int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
         sprintf(buf, ",V%.*s\n", BUF_LEN, tmp_buffer);
         key_set_add(msg);
     } else {
-        printf(buf, ",^%.*s\n", BUF_LEN, tmp_buffer);
+        sprintf(buf, ",^%.*s\n", BUF_LEN, tmp_buffer);
         key_set_erase(msg);
     }
     add_to_output_queue(buf);
