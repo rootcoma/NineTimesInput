@@ -167,7 +167,7 @@ void flush_down_keys()
         if (down_mouse_buttons[i] == 0) {
             continue;
         }
-        add_to_queuef("*i,1\n", BUF_LEN, key_buffer);
+        add_to_queuef("*i,1\n", BUF_LEN, i);
         count++;
     }
 

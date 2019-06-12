@@ -1,4 +1,5 @@
 #include "keydefs.h"
+//#include <Windows.h>
 // From https://raw.githubusercontent.com/torvalds/linux/
 // include/uapi/linux/input-event-codes.h
 
@@ -144,63 +145,63 @@
 #define KEY_RIGHTMETA        126
 #define KEY_COMPOSE          127
 
-#define KEY_STOP        128 /* AC Stop */
-#define KEY_AGAIN       129
-#define KEY_PROPS       130 /* AC Properties */
-#define KEY_UNDO        131 /* AC Undo */
-#define KEY_FRONT       132
-#define KEY_COPY        133 /* AC Copy */
-#define KEY_OPEN        134 /* AC Open */
-#define KEY_PASTE       135 /* AC Paste */
-#define KEY_FIND        136 /* AC Search */
-#define KEY_CUT         137 /* AC Cut */
-#define KEY_HELP        138 /* AL Integrated Help Center */
-#define KEY_MENU        139 /* Menu (show menu) */
-#define KEY_CALC        140 /* AL Calculator */
-#define KEY_SETUP       141
-#define KEY_SLEEP       142 /* SC System Sleep */
-#define KEY_WAKEUP      143 /* System Wake Up */
-#define KEY_FILE        144 /* AL Local Machine Browser */
-#define KEY_SENDFILE    145
-#define KEY_DELETEFILE  146
-#define KEY_XFER        147
-#define KEY_PROG1       148
-#define KEY_PROG2       149
-#define KEY_WWW         150 /* AL Internet Browser */
-#define KEY_MSDOS       151
-#define KEY_COFFEE      152 /* AL Terminal Lock/Screensaver */
+#define KEY_STOP            128 /* AC Stop */
+#define KEY_AGAIN           129
+#define KEY_PROPS           130 /* AC Properties */
+#define KEY_UNDO            131 /* AC Undo */
+#define KEY_FRONT           132
+#define KEY_COPY            133 /* AC Copy */
+#define KEY_OPEN            134 /* AC Open */
+#define KEY_PASTE           135 /* AC Paste */
+#define KEY_FIND            136 /* AC Search */
+#define KEY_CUT             137 /* AC Cut */
+#define KEY_HELP            138 /* AL Integrated Help Center */
+#define KEY_MENU            139 /* Menu (show menu) */
+#define KEY_CALC            140 /* AL Calculator */
+#define KEY_SETUP           141
+#define KEY_SLEEP           142 /* SC System Sleep */
+#define KEY_WAKEUP          143 /* System Wake Up */
+#define KEY_FILE            144 /* AL Local Machine Browser */
+#define KEY_SENDFILE        145
+#define KEY_DELETEFILE      146
+#define KEY_XFER            147
+#define KEY_PROG1           148
+#define KEY_PROG2           149
+#define KEY_WWW             150 /* AL Internet Browser */
+#define KEY_MSDOS           151
+#define KEY_COFFEE          152 /* AL Terminal Lock/Screensaver */
 #define KEY_SCREENLOCK      KEY_COFFEE
 #define KEY_ROTATE_DISPLAY  153 /* Display orientation for e.g. tablets */
 #define KEY_DIRECTION       KEY_ROTATE_DISPLAY
 #define KEY_CYCLEWINDOWS    154
-#define KEY_MAIL        155
+#define KEY_MAIL            155
 #define KEY_BOOKMARKS       156 /* AC Bookmarks */
 #define KEY_COMPUTER        157
-#define KEY_BACK        158 /* AC Back */
-#define KEY_FORWARD     159 /* AC Forward */
-#define KEY_CLOSECD     160
-#define KEY_EJECTCD     161
+#define KEY_BACK            158 /* AC Back */
+#define KEY_FORWARD         159 /* AC Forward */
+#define KEY_CLOSECD         160
+#define KEY_EJECTCD         161
 #define KEY_EJECTCLOSECD    162
 #define KEY_NEXTSONG        163
 #define KEY_PLAYPAUSE       164
 #define KEY_PREVIOUSSONG    165
-#define KEY_STOPCD      166
-#define KEY_RECORD      167
-#define KEY_REWIND      168
-#define KEY_PHONE       169 /* Media Select Telephone */
-#define KEY_ISO         170
-#define KEY_CONFIG      171 /* AL Consumer Control Configuration */
+#define KEY_STOPCD          166
+#define KEY_RECORD          167
+#define KEY_REWIND          168
+#define KEY_PHONE           169 /* Media Select Telephone */
+#define KEY_ISO             170
+#define KEY_CONFIG          171 /* AL Consumer Control Configuration */
 #define KEY_HOMEPAGE        172 /* AC Home */
-#define KEY_REFRESH     173 /* AC Refresh */
-#define KEY_EXIT        174 /* AC Exit */
-#define KEY_MOVE        175
-#define KEY_EDIT        176
+#define KEY_REFRESH         173 /* AC Refresh */
+#define KEY_EXIT            174 /* AC Exit */
+#define KEY_MOVE            175
+#define KEY_EDIT            176
 #define KEY_SCROLLUP        177
 #define KEY_SCROLLDOWN      178
 #define KEY_KPLEFTPAREN     179
 #define KEY_KPRIGHTPAREN    180
-#define KEY_NEW         181 /* AC New */
-#define KEY_REDO        182 /* AC Redo/Repeat */
+#define KEY_NEW             181 /* AC New */
+#define KEY_REDO            182 /* AC Redo/Repeat */
 
 #define KEY_F13         183
 #define KEY_F14         184
@@ -215,28 +216,28 @@
 #define KEY_F23         193
 #define KEY_F24         194
 
-#define KEY_PLAYCD      200
-#define KEY_PAUSECD     201
-#define KEY_PROG3       202
-#define KEY_PROG4       203
-#define KEY_DASHBOARD   204 /* AL Dashboard */
-#define KEY_SUSPEND     205
-#define KEY_CLOSE       206 /* AC Close */
-#define KEY_PLAY        207
-#define KEY_FASTFORWARD 208
-#define KEY_BASSBOOST   209
-#define KEY_PRINT       210 /* AC Print */
-#define KEY_HP          211
-#define KEY_CAMERA      212
-#define KEY_SOUND       213
-#define KEY_QUESTION    214
-#define KEY_EMAIL       215
-#define KEY_CHAT        216
-#define KEY_SEARCH      217
-#define KEY_CONNECT     218
-#define KEY_FINANCE     219 /* AL Checkbook/Finance */
-#define KEY_SPORT       220
-#define KEY_SHOP        221
+#define KEY_PLAYCD          200
+#define KEY_PAUSECD         201
+#define KEY_PROG3           202
+#define KEY_PROG4           203
+#define KEY_DASHBOARD       204 /* AL Dashboard */
+#define KEY_SUSPEND         205
+#define KEY_CLOSE           206 /* AC Close */
+#define KEY_PLAY            207
+#define KEY_FASTFORWARD     208
+#define KEY_BASSBOOST       209
+#define KEY_PRINT           210 /* AC Print */
+#define KEY_HP              211
+#define KEY_CAMERA          212
+#define KEY_SOUND           213
+#define KEY_QUESTION        214
+#define KEY_EMAIL           215
+#define KEY_CHAT            216
+#define KEY_SEARCH          217
+#define KEY_CONNECT         218
+#define KEY_FINANCE         219 /* AL Checkbook/Finance */
+#define KEY_SPORT           220
+#define KEY_SHOP            221
 #define KEY_ALTERASE        222
 #define KEY_CANCEL          223 /* AC Cancel */
 #define KEY_BRIGHTNESSDOWN  224
@@ -244,7 +245,7 @@
 #define KEY_MEDIA           226
 
 #define KEY_SWITCHVIDEOMODE 227 /* Cycle between available video
-                       outputs (Monitor/LCD/TV-out/etc) */
+                                   outputs (Monitor/LCD/TV-out/etc) */
 #define KEY_KBDILLUMTOGGLE  228
 #define KEY_KBDILLUMDOWN    229
 #define KEY_KBDILLUMUP      230
@@ -281,7 +282,7 @@
 
 // Used http://cherrytree.at/misc/vk.htm as reference
 // 0 = no match, 0xff means I need to find a match
-const DWORD windows_vk_conversions[] = {
+const DWORD windows_vk_conversions[256] = {
     KEY_RESERVED,   // 0 I don't know
     0,              // 1 VK_LBUTTON left mouse button
     0,              // 2 VK_RBUTTON right mouse button
@@ -294,7 +295,7 @@ const DWORD windows_vk_conversions[] = {
     KEY_TAB,        // 9 VK_TAB TAB key
     0,              // 10 Reserved
     0,              // 11 Reserved
-    0xFF,           // 12 VK_CLEAR CLEAR key
+    KEY_ALTERASE,   // 12 VK_CLEAR CLEAR key ??? unsure
     KEY_ENTER,      // 13 VK_RETURN ENTER key
     0,              // 14 Undefined
     0,              // 15 Undefined
@@ -453,7 +454,7 @@ const DWORD windows_vk_conversions[] = {
     KEY_REFRESH,    // 168 VK_BROWSER_REFRESH Browser Refresh key
     KEY_STOP,       // 169 VK_BROWSER_STOP Browser Stop Key
     KEY_SEARCH,     // 170 VK_BROWSER_SEARCH Browser Search key
-    0xFF,           // 171 VK_BROWSER_FAVORITES Browser Favorites key
+    KEY_BOOKMARKS,  // 171 VK_BROWSER_FAVORITES Browser Favorites key ??? unsure
     KEY_HOMEPAGE,   // 172 VK_BROWSER_HOME Browser Start and Home key
     KEY_MUTE,       // 173 VK_VOLUME_MUTE Volume Mute key
     KEY_VOLUMEDOWN, // 174 VK_VOLUME_DOWN Volume Down key

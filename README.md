@@ -3,34 +3,50 @@ A network KxM (Keyboard/(void)/Mouse) server/client
 
 ## About
 
-This was a program I wrote to forward my keyboard and mouse input from my Windows desktop to my GNU/Linux laptop. I wanted the feeling of having multiple monitors while having 2 machines at my desk.
+A program to forward keyboard and mouse input from a Windows desktop to a GNU/Linux desktop. Allows for multiple screens on a desk, while having multiple machines at the desk sharing the same input device.
 
 ## Usage
 
-Linux:
-
-Edit the IP address in start.sh to point to whatever IP you have
-```
-./start.sh
-```
+**Instructions for Windows are listed first for a reason! By default start.bat opens a TCP socket for the linux client to connect to. Attempting to run start.sh without start.bat running will result in the client closing instantly.**
 
 Windows:
 
+ - If you use the netcat I linked below, add it to your PATH, or edit start.bat to manually point to it
+ - Edit the port in start.bat if necessary (make sure to do so in start.bat to match)
+ - Run the following:
 ```
 .\start.bat
 ```
 
-The "Pause" key will stop user input from being consumed (Windows).
-
-
-## Build
-
 Linux:
 
+ - Edit the IP address in start.sh to the IP address of the computer which will forward input
+ - Edit the port if necessary (make sure to do so in start.bat to match)
+ - run the following (make sure you run the windows batch file first):
 ```
-$ cd linux
-$ make
+./start.sh
 ```
+
+#### It's running, now what?
+
+**The "Pause" key is the current hotkey for switching between remote and local input modes. Try hitting the key a few times. If you have the client and server connected you should see your mouse move on the remote machine when input is locked locally.**
+
+## Compiling
+
+#### Prereqs
+
+Windows:
+ - Clang http://releases.llvm.org/download.html
+ - netcat or similar https://eternallybored.org/misc/netcat/
+
+Linux:
+ - make
+ - gcc
+ - XTest Extension headers
+ - netcat or similar
+
+
+#### Build
 
 Windows:
 
@@ -39,33 +55,11 @@ Windows:
 > .\build.bat
 ```
 
-
-## Prereqs
-
 Linux:
- - make
- - gcc
- - X11/Xlib headers
- - XTest Extension headers
- - netcat or similar (see OpenSSL Setup below)
 
-Windows:
- - Clang http://releases.llvm.org/download.html
- - netcat or similar (see OpenSSL Setup below) https://eternallybored.org/misc/netcat/
-
-## OpenSSL setup
-
-Linux:
- - Obtain OpenSSL from your package manager (you probably already have it)
- - After Windows is running start-secure.bat, run start-secure.sh
-
-Windows:
- - Download OpenSSL https://slproweb.com/products/Win32OpenSSL.html
- - Add C:\Program Files (x86)\OpenSSL-Win32\bin (or your install location) to your PATH https://superuser.com/questions/949560/how-do-i-set-system-environment-variables-in-windows-10
- - cd back to kxm\windows
- - run:
 ```
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -nodes
+$ cd linux
+$ make
 ```
- - You can hit enter for everything and you don't need to set a password
- - run start-secure.bat
+
+
