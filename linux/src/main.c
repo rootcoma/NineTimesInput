@@ -57,79 +57,12 @@ void mouse_click(const int button, const int click_type)
 }
 
 
-KeyCode convert_to_key_code(const char* char_str)
+void keyboard_press(unsigned char key_code, const int down)
 {
-    static const char *conversions[] = {
-            "Alt",            "Alt_L",
-            "Application",    "Menu",
-            "Backspace",      "BackSpace",
-            "CapsLock",       "Caps_Lock",
-            "Ctrl",           "Control_L",
-            "Enter",          "Return",
-            "Esc",            "Escape",
-            "LeftWindows",    "Super_L",
-            "Num0",           "KP_0",
-            "Num1",           "KP_1",
-            "Num2",           "KP_2",
-            "Num3",           "KP_3",
-            "Num4",           "KP_4",
-            "Num5",           "KP_5",
-            "Num6",           "KP_6",
-            "Num7",           "KP_7",
-            "Num8",           "KP_8",
-            "Num9",           "KP_9",
-            "Num/",           "KP_Divide",
-            "Num*",           "KP_Multiply",
-            "Num-",           "KP_Subtract",
-            "Num+",           "KP_Add",
-            "NumLock",        "Num_Lock",
-            "NumEnter",       "KP_Enter",
-            "NumDel",         "KP_Delete", // Num period
-            "PageUp",         "Page_Up",
-            "PageDown",       "Page_Down",
-            "PrntScrn",       "Print", // Not sure
-            "RightWindows",   "Super_R",
-            "RightAlt",       "Alt_R",
-            "RightCtrl",      "Control_R",
-            "RightShift",     "Shift_R",
-            "Shift",          "Shift_L",
-            "Space",          "space",
-            ";",              "semicolon",
-            "[",              "bracketleft",
-            "]",              "bracketright",
-            "\\",             "backslash",
-            "/",              "slash",
-            "-",              "minus",
-            "`",              "grave",
-            "'",              "quotedbl",
-            ",",              "comma",
-            ".",              "period",
-            "=",              "equal",
-    };
-    for(int i=0; i<sizeof(conversions)/sizeof(const char*); i+=2) {
-        if (!strcmp(conversions[i], char_str)) {
-            return XKeysymToKeycode(display, XStringToKeysym(conversions[i+1]));
-        }
-    }
-    if (strlen(char_str) == 1) {
-        return XKeysymToKeycode(display, XStringToKeysym(char_str));
-    }
-
-    KeyCode ret = XKeysymToKeycode(display, XStringToKeysym(char_str));
-    if (ret == 0) {
-        fprintf(stderr, "[*] Missing Input: %s\n", char_str);
-    }
-    return ret;
-}
-
-
-void keyboard_press(const char* char_str, const int down)
-{
-    KeyCode key_code = convert_to_key_code(char_str);
     if (key_code == 0) {
         return;
     }
-    XTestFakeKeyEvent(display, key_code, down ? True : False, CurrentTime);
+    XTestFakeKeyEvent(display, (KeyCode)key_code, down ? True : False, CurrentTime);
     XFlush(display);
 }
 
@@ -158,7 +91,6 @@ void parse_command(char *cmd)
 	size_t num_read = 0;
 	int x = 0;
 	int y = 0;
-	char tmp[BUF_LEN] = { 0 };
     switch (cmd[0]) {
         case '.': // Mouse move
             num_read = sscanf(&cmd[1], "%d,%d", &x, &y);
@@ -186,12 +118,12 @@ void parse_command(char *cmd)
             if (cmd[1] != '^' && cmd[1] != 'V' && cmd[1] != 'v') {
                 return; // Invalid char
             }
-            num_read = sscanf(&cmd[2],"%22s", tmp);
+            num_read = sscanf(&cmd[2],"%u", &x);
             if (num_read != 1) {
                 return; // Invalid data
             }
-            x = cmd[1] == '^' ? 0 : 1;
-            keyboard_press(tmp, x); // tmp = Key Name, x = down
+            y = cmd[1] == '^' ? 0 : 1;
+            keyboard_press(x, y); // x = KeyCode, y = down
             break;
     }
 }

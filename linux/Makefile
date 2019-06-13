@@ -1,9 +1,13 @@
 PROGRAM_NAME=kxm
 
 SOURCE_FILES=\
-    src/main.c \
-    src/tweetnacl.c \
-    src/encryption.c \
+	src/main.c \
+	src/crypto/tweetnacl.c \
+	src/crypto/encryption.c \
+
+INC=\
+	-Isrc \
+	-Isrc/crypto \
 
 CC_FLAGS=\
 	-O2 \
@@ -16,11 +20,11 @@ LINKER_FLAGS=\
 
 all:
 	mkdir -p build
-	gcc -o build/$(PROGRAM_NAME) $(CC_FLAGS) $(LINKER_FLAGS) $(SOURCE_FILES)
+	gcc -o build/$(PROGRAM_NAME) $(CC_FLAGS) $(LINKER_FLAGS) $(INC) $(SOURCE_FILES)
 
 test:
 	mkdir -p build
-	gcc -o build/xlistener -O2 -Wall -Werror src/keyboardhook.c src/mousehook.c
+	gcc -o build/xlistener -O2 -Wall -Werror src/input_hook/keyboardhook.c src/input_hook/mousehook.c
 
 clean:
 	rm -rf build/*
