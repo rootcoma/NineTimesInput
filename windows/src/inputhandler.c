@@ -112,8 +112,8 @@ void lock_input()
 {
     RECT rect = { 0, 0, 0, 0 };
 
-    show_window();
-    HWND base_window_handle = get_gui_handle();
+    gui_show_window();
+    HWND base_window_handle = gui_get_window_handle();
     SetForegroundWindow(base_window_handle);
     SetActiveWindow(base_window_handle);
     SetFocus(base_window_handle);
@@ -182,7 +182,7 @@ void flush_down_keys()
 void unlock_input()
 {
     ClipCursor(NULL); // Win32 call, passing NULL unlocks the mouse bounds
-    hide_window();
+    gui_hide_window();
     flush_down_keys();
     is_input_locked = FALSE;
     //fprintf(stderr, "[*] unlockInput complete\n");
@@ -196,7 +196,7 @@ int is_window_focused()
         return FALSE;
     }
 
-    if (get_gui_handle() == GetForegroundWindow()) {
+    if (gui_get_window_handle() == GetForegroundWindow()) {
         is_offscreen = TRUE;
     } else {
         is_offscreen = FALSE;

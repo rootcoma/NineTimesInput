@@ -1,6 +1,6 @@
 #include "keydefs.h"
 
-// xmodmap -pke
+// This is from `xmodmap -pke` ran on my gnu/linux machine
 #define X_KEYCODE_NO_MATCH 0
 #define X_KEYCODE_NEED_MATCH X_KEYCODE_NO_MATCH
 #define X_KEYCODE_ESCAPE 9                  // Escape NoSymbol Escape

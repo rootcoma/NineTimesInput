@@ -12,6 +12,8 @@
 #include "inputhandler.h"
 #include "gui.h"
 #include "encryption.h"
+#include "config.h"
+
 /**
  * TODO:
  *  - Finalize spec for stdout format and mouse/key names/codes
@@ -27,7 +29,7 @@ void cleanup()
 {
     unhook_keyboard();
     unhook_mouse();
-    decimate_window(); // Try and clean up after our gui
+    gui_decimate_window(); // Try and clean up after our gui
     fprintf(stderr, "[+] Bye!\n");
 }
 
@@ -48,7 +50,7 @@ void setup()
 
 DWORD WINAPI gui_thread_loop(void* arg)
 {
-    initialize_window();
+    gui_initialize_window();
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -88,7 +90,7 @@ void loop_until_exit()
             continue;
         }
         while (plaintext != NULL) {
-            output_encrypt(cipher_text, plaintext, BUF_LEN);
+            crypto_xor_plaintext(cipher_text, plaintext, BUF_LEN);
             fwrite(cipher_text, sizeof(unsigned char), BUF_LEN, stdout);
             plaintext = dequeue_output();
         }
@@ -131,6 +133,12 @@ void disable_console_quick_edit_mode()
 int main()
 {
     atexit(cleanup);
+
+    config_parse_file("config.txt");
+
+    if(!crypto_setup()) {
+        return -5;
+    }
 
     //disable_console_quick_edit_mode();
     spawn_all_main_threads();

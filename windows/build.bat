@@ -4,6 +4,7 @@ set PROGRAM_NAME=kxm.exe
 set SRC_FILES=^
 src\main.c ^
 src\gui.c ^
+src\config.c ^
 src\inputhandler.c ^
 src\input_hook\mousehook.c ^
 src\input_hook\keyboardhook.c ^
@@ -24,6 +25,7 @@ set CC_FLAGS=-O2 -Wall -Werror
 
 @ECHO on
 mkdir build
+copy /A /Y res\config.txt build\config.txt
 clang -o build\%PROGRAM_NAME% %CC_FLAGS% %LINKER_FLAGS% %INC% %SRC_FILES%
 @ECHO off
 

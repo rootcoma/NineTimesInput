@@ -1,0 +1,6 @@
+# These values are used to encrypt your keystrokes
+# This must match on client and server
+
+secret = _CHANGE THIS VALUE_
+nonce  = _CHANGE THIS VALUE_
+

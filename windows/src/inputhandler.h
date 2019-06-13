@@ -27,18 +27,14 @@
 int register_mouse_click(MSLLHOOKSTRUCT *mouse_event_data, int button,
         int click_type);
 
-
 // return 1 to ignore scroll or 0 to pass the event on
 int register_mouse_scroll(MSLLHOOKSTRUCT *mouse_event_data);
 
-
 void register_mouse_move(MSLLHOOKSTRUCT *mouse_event_data);
-
 
 // return 1 to ignore key or 0 to pass the event on
 int register_key_stroke(KBDLLHOOKSTRUCT *keyboard_event_data, int is_key_down,
         int is_alt_down);
-
 
 // Get 1 line of formatted output for stdout that represents input
 char *dequeue_output();

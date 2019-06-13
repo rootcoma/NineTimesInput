@@ -2,15 +2,16 @@
 #define GUI_H
 
 
-const HWND get_gui_handle();
+const HWND gui_get_window_handle();
 
-void show_window(); // No expectations :)
+void gui_show_window();
 
-void hide_window();
+void gui_hide_window();
 
-void decimate_window();
+void gui_decimate_window();
 
-void initialize_window();
+void gui_initialize_window();
+
 
 #endif
 

@@ -16,32 +16,34 @@ HINSTANCE instance_handle = NULL;
 BOOL gui_initialized = FALSE;
 
 
-const HWND get_gui_handle()
+const HWND gui_get_window_handle()
 {
     return base_window_handle;
 }
 
 
-// Return FALSE or 0 according to example from MSDN
-LRESULT CALLBACK main_window_cb(HWND win_handle, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK gui_main_window_cb(HWND win_handle, UINT msg, WPARAM wp, LPARAM lp)
 {
-    switch (msg) {
+    // switch (msg) {
     // case WM_DESTROY:
-    //     PostQuitMessage(0);
-    //     return FALSE;
+        // PostQuitMessage(0);
+        // return FALSE;
     // case WM_PAINT:
-    //     PAINTSTRUCT ps;
-    //     BeginPaint(win_handle, &ps);
-    //     EndPaint(win_handle, &ps);
-    //     return FALSE;
-    default:
-        return DefWindowProc(win_handle, msg, wp, lp);
-    }
+        // PAINTSTRUCT ps;
+        // BeginPaint(win_handle, &ps);
+        // EndPaint(win_handle, &ps);
+        // return FALSE;
+    // default:
+        // return DefWindowProc(win_handle, msg, wp, lp);
+    // }
+    // 
+    // return FALSE;
 
-    return FALSE;
+    return DefWindowProc(win_handle, msg, wp, lp);
 }
 
-void initialize_window()
+
+void gui_initialize_window()
 {
     if (gui_initialized) {
         fprintf(stderr, "[*] GUI Window is already initialized\n");
@@ -57,7 +59,7 @@ void initialize_window()
     LPCTSTR window_title = "kxm";
 
     window_class.cbSize = sizeof(WNDCLASSEX);
-    window_class.lpfnWndProc = main_window_cb;
+    window_class.lpfnWndProc = gui_main_window_cb;
     window_class.hInstance = instance_handle;
     window_class.lpszClassName = class_name;
     window_class.hIcon = NULL;
@@ -92,7 +94,7 @@ void initialize_window()
     EnableWindow(base_window_handle, FALSE); // Disable input
 }
 
-void hide_window()
+void gui_hide_window()
 {
     if (!gui_initialized) {
         return;
@@ -101,10 +103,10 @@ void hide_window()
     UpdateWindow(base_window_handle);
 }
 
-void show_window()
+void gui_show_window()
 {
     if (!gui_initialized) {
-        initialize_window();
+        gui_initialize_window();
     }
     
     ShowWindow(base_window_handle, SW_SHOW);
@@ -128,7 +130,7 @@ void show_window()
 }
 
 
-void decimate_window()
+void gui_decimate_window()
 {
     if (gui_initialized) {
         DestroyWindow(base_window_handle);
