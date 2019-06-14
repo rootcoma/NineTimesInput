@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <X11/extensions/XTest.h>
 #include "encryption.h"
+#include "config.h"
 
 // Make sure BUFFER_LEN < INT_MAX
 // This needs to match everywhere for xor process to work right now
@@ -141,7 +142,7 @@ void loop()
 			fprintf(stderr, "[-] read failed size: %ul, Max: %ul\n", num_read, BUF_LEN);
 			continue;
 		}
-		output_decrypt(decrypt_buffer, buffer, BUF_LEN);
+		crypto_xor_plaintext(decrypt_buffer, buffer, BUF_LEN);
 		parse_command(decrypt_buffer);
 	}
 }
@@ -173,7 +174,11 @@ void handle_signal()
 
 int main()
 {
-    atexit(cleanup);
+	config_parse_file("config.txt");
+    
+	crypto_setup();
+	
+	atexit(cleanup);
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
     setup();

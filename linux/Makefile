@@ -2,6 +2,7 @@ PROGRAM_NAME=kxm
 
 SOURCE_FILES=\
 	src/main.c \
+	src/config.c \
 	src/crypto/tweetnacl.c \
 	src/crypto/encryption.c \
 
@@ -20,6 +21,7 @@ LINKER_FLAGS=\
 
 all:
 	mkdir -p build
+	cp -f res/config.txt build/config.txt
 	gcc -o build/$(PROGRAM_NAME) $(CC_FLAGS) $(LINKER_FLAGS) $(INC) $(SOURCE_FILES)
 
 test:
