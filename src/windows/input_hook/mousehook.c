@@ -140,7 +140,7 @@ void mouse_move_relative(const int dx, const int dy)
 }
 
 
-void mouse_scroll(int up)
+void mouse_scroll(const int down)
 {
     UINT num_input_structs = 1;
     INPUT input_struct = { 0 };
@@ -149,7 +149,7 @@ void mouse_scroll(int up)
     input_struct.mi.dx = 0;
     input_struct.mi.dy = 0;
     input_struct.mi.dwFlags = MOUSEEVENTF_WHEEL;
-    input_struct.mi.mouseData = up ? WHEEL_DELTA : -WHEEL_DELTA;
+    input_struct.mi.mouseData = down ? -WHEEL_DELTA : WHEEL_DELTA;
     int cb_size = sizeof(input_struct);
     UINT num_inserted = SendInput(num_input_structs, &input_struct, cb_size);
     if (num_inserted < 1) {
@@ -166,23 +166,49 @@ void mouse_click(const int button, const int down)
     input_struct.mi.time = 0;
     input_struct.mi.dx = 0;
     input_struct.mi.dy = 0;
+    #define DOWN_ELSE(X, Y) (down ? X : Y)
     switch (button) {
-    case 0: // Not used for standard
-        input_struct.mi.dwFlags = down ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
+    case 0: // None
         break;
     case 1: // left
-        input_struct.mi.dwFlags = down ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
-        break;
-    case 3: // right
-        input_struct.mi.dwFlags = down ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_RIGHTUP;
+        input_struct.mi.dwFlags = DOWN_ELSE(MOUSEEVENTF_LEFTDOWN,
+                MOUSEEVENTF_LEFTUP);
         break;
     case 2: // middle
-        //input_struct.mi.dwFlags = down ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
-    case 4: // x down
-        //input_struct.mi.dwFlags = down ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
-    case 5: // x up
-        //input_struct.mi.dwFlags = down ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
-        fprintf(stderr, "[-] TODO: Implement mouse button %d\n", button);
+        input_struct.mi.dwFlags = DOWN_ELSE(MOUSEEVENTF_MIDDLEDOWN,
+                MOUSEEVENTF_MIDDLEUP);
+        break;
+    case 3: // right
+        input_struct.mi.dwFlags = DOWN_ELSE(MOUSEEVENTF_RIGHTDOWN,
+                MOUSEEVENTF_RIGHTUP);
+        break;
+    case 4:
+        input_struct.mi.dwData = -WHEEL_DELTA;
+        input_struct.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        break;
+    case 5:
+        input_struct.mi.dwData = WHEEL_DELTA;
+        input_struct.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        break;
+    case 6:
+        input_struct.mi.dwData = -WHEEL_DELTA;
+        input_struct.mi.dwFlags = MOUSEEVENTF_HWHEEL;
+        break;
+    case 7:
+        input_struct.mi.dwData = WHEEL_DELTA;
+        input_struct.mi.dwFlags = MOUSEEVENTF_HWHEEL;
+        break;
+    case 8: // x down
+        input_struct.mi.dwData = XBUTTON1;
+        input_struct.mi.dwFlags = DOWN_ELSE(MOUSEEVENTF_XDOWN,
+                MOUSEEVENTF_XUP);
+
+        break;
+    case 9: // x up
+        input_struct.mi.dwData = XBUTTON2;
+        input_struct.mi.dwFlags = DOWN_ELSE(MOUSEEVENTF_XDOWN,
+                MOUSEEVENTF_XUP);
+
         break;
     }
     int cb_size = sizeof(input_struct);

@@ -33,11 +33,9 @@ int gui_lock_mouse()
     //     free(err);
     //     return 0;
     // }
-
     // if (grab_reply->status != XCB_GRAB_STATUS_SUCCESS) {
     //     fprintf(stderr, "[-] Error locking mouse input\n");
     // }
-
     // free(grab_reply);
     return 1;
 }
@@ -86,7 +84,7 @@ void gui_create_window()
     
     // To make the window float with my wm, ymmv
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
-        XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 32, 1, &screen->root);
+            XCB_ATOM_WM_TRANSIENT_FOR, XCB_ATOM_WINDOW, 32, 1, &screen->root);
     
     // TODO: hide and show window, for now always show window
     xcb_map_window(conn, window);
@@ -95,24 +93,18 @@ void gui_create_window()
 }
 
 
-void mouse_scroll(const int up)
+void mouse_scroll(const int down)
 {
-	mouse_click(up ? 5 : 4, 1);
-	mouse_click(up ? 5 : 4, 0);
+	mouse_click(down ? 5 : 4, 1);
+	mouse_click(down ? 5 : 4, 0);
 }
 
 
 void mouse_click(const int button, const int down)
 {
-    if (button > 8) {
-        fprintf(stderr, "[>] TODO: Implement ms btn > 8. (b:%d,%d)\n",
-                button, down);
+    if (button > 9 || button < 1) {
+        fprintf(stderr, "[!] Invalid mouse button (b:%d,%d)\n", button, down);
         return;
-    }
-    if (down > 1) {
-        fprintf(stderr, "[!] Skipping click. (b:%d,%d)\n",
-                button, down);
-        return; // skip anything crazy for now
     }
     
     xcb_test_fake_input(conn,
@@ -174,6 +166,7 @@ void keyboard_press(const unsigned char key_code, const int down)
             key_code, XCB_CURRENT_TIME, XCB_NONE, 0, 0, 0);
     xcb_flush(conn);
 }
+
 
 void unhook_keyboard()
 {
@@ -285,9 +278,6 @@ void gui_event_loop()
                 //fprintf(stderr, "[*] Button released\n");
             }
             break;
-        //case XCB_MAPPING_NOTIFY:
-        //    fprintf(stderr, "[*] Mapping Notification\n");
-        //    break;
         default:
             fprintf(stderr, "[*] Default type: %d\n", event_type);
             break;
@@ -329,20 +319,19 @@ void gui_cleanup()
 }
 
 
-/* This will freeze program, I would like to revisit this later
-void create_passive_hook() {
-    xcb_generic_error_t *err;
-    err = xcb_request_check(conn,
-            xcb_grab_key_checked(conn, 1, screen->root,
-                    0, // no modifier
-                    96, // X_KEYCODE_f12 XXX: Configuration value here
-                    XCB_GRAB_MODE_ASYNC,
-                    XCB_GRAB_MODE_SYNC)
-            );
-    if (err != NULL) {
-        fprintf(stderr, "[-] Error hooking keyboard\n");
-        free(err);
-        return;
-    }
-}
-*/
+//  This will freeze program, I would like to revisit this later
+// void create_passive_hook() {
+//     xcb_generic_error_t *err;
+//     err = xcb_request_check(conn,
+//             xcb_grab_key_checked(conn, 1, screen->root,
+//                     0, // no modifier
+//                     96, // X_KEYCODE_f12 XXX: Configuration value here
+//                     XCB_GRAB_MODE_ASYNC,
+//                     XCB_GRAB_MODE_SYNC)
+//             );
+//     if (err != NULL) {
+//         fprintf(stderr, "[-] Error hooking keyboard\n");
+//         free(err);
+//         return;
+//     }
+// }

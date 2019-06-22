@@ -19,7 +19,7 @@ void mouse_move_relative(const int dx, const int dy);
 
 void mouse_move_to(const int x, const int y);
 
-void mouse_scroll(const int up);
+void mouse_scroll(const int down);
 
 void mouse_click(const int button, const int down);
 

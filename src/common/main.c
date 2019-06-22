@@ -168,7 +168,7 @@ static void parse_command(char *cmd)
     }
     if (i >= BUF_LEN || i < 2) {
         fprintf(stderr, "[-] Could not find newline, discarding\n");
-        fprintf(stderr, "[-] cmd: %.32s", cmd);
+        fprintf(stderr, "[-] cmd: %.32s", cmd); // TODO: Hardcoded magic num
         return;
     }
 
@@ -196,8 +196,8 @@ static void parse_command(char *cmd)
             if (cmd[1] != '^' && cmd[1] != 'V' && cmd[1] != 'v') {
                 return; // Invalid char
             }
-            x = cmd[1] == '^' ? 1 : 0;
-            mouse_scroll(x); // x = up
+            x = cmd[1] == '^' ? 0 : 1;
+            mouse_scroll(x); // x = down
             //fprintf(stderr, "[+] Mouse scroll - direction: %d\n", x);
             break;
         case ',': // Key press;
@@ -218,13 +218,13 @@ static void parse_command(char *cmd)
 
 static void server_loop_until_exit()
 {
-    // TODO: More sophisticated looping and queueing
+    // TODO: Get rid of sleep
     char *plaintext;
     unsigned char cipher_text[BUF_LEN] = {0};
     while (1) {
         plaintext = dequeue_output();
         if (plaintext == NULL) {
-            SLEEP(5);
+            SLEEP(2);
             continue;
         }
         while (plaintext != NULL) {
@@ -233,7 +233,6 @@ static void server_loop_until_exit()
             plaintext = dequeue_output();
         }
         fflush(stdout);
-        SLEEP(2);
     }
 }
 
@@ -300,6 +299,7 @@ int main(int argc, char **argv)
 #else
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
+    // TODO: Catch USR1 signal and toggle focus based on it
 #endif
 
     if (is_server) {
@@ -307,11 +307,9 @@ int main(int argc, char **argv)
         setup();
         server_loop_until_exit();
     } else {
-
         gui_setup(); // connnect xcb to X11
         client_loop_until_exit();
     }
 
     return EXIT_SUCCESS;
 }
-
