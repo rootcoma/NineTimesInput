@@ -474,7 +474,7 @@ static const unsigned char windows_vk_conversions[256] = {
     X_KEYCODE_NEED_MATCH,   // 255 end of list
 };
 
-const char** x_keynames = {
+const char* x_keynames[256] = {
     "nosymbol",
     "nosymbol",
     "nosymbol",
@@ -765,14 +765,14 @@ static int keycomp(const char* keyname, const char* str)
 {
     int i = 0;
     do {
-        if (str[i] =< 'Z' && str[i] >= 'A') {
+        if (str[i] <= 'Z' && str[i] >= 'A') {
             if (keyname[i] != str[i]+0x20) {
                 return 0;
             }
         } else if (keyname[i] != str[i]) {
             return 0; 
         }
-    } while (keyname[i++] != '\0')
+    } while (keyname[i++] != '\0');
 
     return 1;
 }
@@ -787,6 +787,6 @@ const unsigned char key_name_to_keycode(const char *keyname)
         }
     }
 
-    fprintf(stderr, "[-] Could not find keycode for '%s'", keyname)
+    fprintf(stderr, "[-] Could not find keycode for '%s'", keyname);
     return -1;
 }

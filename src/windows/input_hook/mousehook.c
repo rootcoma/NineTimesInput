@@ -183,29 +183,29 @@ void mouse_click(const int button, const int down)
                 MOUSEEVENTF_RIGHTUP);
         break;
     case 4:
-        input_struct.mi.dwData = -WHEEL_DELTA;
+        input_struct.mi.mouseData = -WHEEL_DELTA;
         input_struct.mi.dwFlags = MOUSEEVENTF_WHEEL;
         break;
     case 5:
-        input_struct.mi.dwData = WHEEL_DELTA;
+        input_struct.mi.mouseData = WHEEL_DELTA;
         input_struct.mi.dwFlags = MOUSEEVENTF_WHEEL;
         break;
     case 6:
-        input_struct.mi.dwData = -WHEEL_DELTA;
+        input_struct.mi.mouseData = -WHEEL_DELTA;
         input_struct.mi.dwFlags = MOUSEEVENTF_HWHEEL;
         break;
     case 7:
-        input_struct.mi.dwData = WHEEL_DELTA;
+        input_struct.mi.mouseData = WHEEL_DELTA;
         input_struct.mi.dwFlags = MOUSEEVENTF_HWHEEL;
         break;
     case 8: // x down
-        input_struct.mi.dwData = XBUTTON1;
+        input_struct.mi.mouseData = XBUTTON1;
         input_struct.mi.dwFlags = DOWN_ELSE(MOUSEEVENTF_XDOWN,
                 MOUSEEVENTF_XUP);
 
         break;
     case 9: // x up
-        input_struct.mi.dwData = XBUTTON2;
+        input_struct.mi.mouseData = XBUTTON2;
         input_struct.mi.dwFlags = DOWN_ELSE(MOUSEEVENTF_XDOWN,
                 MOUSEEVENTF_XUP);
 
