@@ -23,20 +23,20 @@ xcb_gcontext_t background;
 
 int gui_lock_mouse()
 {
-    // xcb_generic_error_t *err = NULL;
-    // xcb_grab_pointer_reply_t *grab_reply = NULL;
-    // grab_reply = xcb_grab_pointer_reply(conn,
-    //         xcb_grab_pointer(conn, 1, window, 0, XCB_GRAB_MODE_ASYNC,
-    //         XCB_GRAB_MODE_ASYNC, window, XCB_NONE, XCB_CURRENT_TIME), &err);
-    // if (err != NULL) {
-    //     fprintf(stderr, "[-] Error calling grab pointer\n");
-    //     free(err);
-    //     return 0;
-    // }
-    // if (grab_reply->status != XCB_GRAB_STATUS_SUCCESS) {
-    //     fprintf(stderr, "[-] Error locking mouse input\n");
-    // }
-    // free(grab_reply);
+    xcb_generic_error_t *err = NULL;
+    xcb_grab_pointer_reply_t *grab_reply = NULL;
+    grab_reply = xcb_grab_pointer_reply(conn,
+            xcb_grab_pointer(conn, 1, window, 0, XCB_GRAB_MODE_ASYNC,
+            XCB_GRAB_MODE_ASYNC, window, XCB_NONE, XCB_CURRENT_TIME), &err);
+    if (err != NULL) {
+        fprintf(stderr, "[-] Error calling grab pointer\n");
+        free(err);
+        return 0;
+    }
+    if (grab_reply->status != XCB_GRAB_STATUS_SUCCESS) {
+        fprintf(stderr, "[-] Error locking mouse input\n");
+    }
+    free(grab_reply);
     return 1;
 }
 
@@ -197,8 +197,8 @@ void gui_setup()
 
 void gui_unlock_mouse()
 {
-    // xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
-    // xcb_flush(conn);
+    xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+    xcb_flush(conn);
 }
 
 

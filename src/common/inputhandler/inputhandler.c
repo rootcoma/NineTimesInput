@@ -33,8 +33,8 @@ static char output_queue[QUEUE_LEN][BUF_LEN] = {{ 0 }};
 static int output_queue_offset = 0;
 static int output_dequeue_offset = 0;
 
-static int window_center_y; // storage for centerY of this ConsoleWindow when queried
-static int window_center_x; // same and for center X
+static int window_center_y;
+static int window_center_x;
 static unsigned char pause_keycode = DEFAULT_PAUSE_KEYCODE;
 
 

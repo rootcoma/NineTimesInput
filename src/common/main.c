@@ -25,6 +25,15 @@
  */
 /**
  * TODO:
+ *  - Toggling
+ *    + Add "offscreen to toggle multiplexer" mode
+ *    + Global hook for linux to toggle multiplexer
+ *  - Add conversion of keynames in config to keycode
+ *  - Add buffering for scrolling and possibly mouse movement for linux
+ *  - Look into mouse lag Linux -> Windows
+ *  - Test linux -> linux
+ * ISSUES:
+ *  - Fix SendInput not responding when Task manager, etc open
  *  - Fix ctrl+alt+delete skipping flushing keys
  *    + maybe get callback from windows when not in focus?
  *    + maybe use ctrl+alt as escape keys to pause input proxy client?
@@ -237,9 +246,6 @@ static void server_loop_until_exit()
 }
 
 
-// TODO: Move this to a separate thread, or at least command parsing so that
-//       stdin reading is not competing with Win32 SendInput calls on the
-//       same thread.
 static void client_loop_until_exit()
 {
     unsigned char buffer[BUF_LEN] = { 0 };
@@ -254,8 +260,6 @@ static void client_loop_until_exit()
         }
         crypto_xor_cipher(decrypt_buffer, buffer, BUF_LEN);
         parse_command(decrypt_buffer);
-
-        SLEEP(2); // Allow messages to be processed
     }
 }
 
@@ -299,7 +303,6 @@ int main(int argc, char **argv)
 #else
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
-    // TODO: Catch USR1 signal and toggle focus based on it
 #endif
 
     if (is_server) {

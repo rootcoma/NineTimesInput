@@ -149,7 +149,7 @@ void mouse_scroll(const int down)
     input_struct.mi.dx = 0;
     input_struct.mi.dy = 0;
     input_struct.mi.dwFlags = MOUSEEVENTF_WHEEL;
-    input_struct.mi.mouseData = down ? -WHEEL_DELTA : WHEEL_DELTA;
+    input_struct.mi.mouseData = down ? WHEEL_DELTA : -WHEEL_DELTA;
     int cb_size = sizeof(input_struct);
     UINT num_inserted = SendInput(num_input_structs, &input_struct, cb_size);
     if (num_inserted < 1) {
